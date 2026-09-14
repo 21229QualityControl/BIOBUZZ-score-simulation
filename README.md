@@ -5,7 +5,7 @@ A standalone Monte Carlo simulator for comparing FTC BIOBUZZ Hive-scoring strate
 It compares a Pollen-only primary robot with a dual-size robot that targets Nectar, including:
 
 - Shared primary-robot settings that apply to every simulation
-- Reusable primary strategy configurations for guaranteed Nectar count and added cycle time
+- Reusable primary strategy configurations for targeted Nectar count and added cycle time
 - Reusable partner cycle/load configurations with shared partner accuracy and jitter settings
 - Automatic generation of every primary-strategy × partner combination
 - Batch shooting accuracy
@@ -19,7 +19,7 @@ It compares a Pollen-only primary robot with a dual-size robot that targets Nect
 
 Hive score is modeled as 20 points per tip plus 2 points for each ball left in the active Cell when TELEOP ends.
 
-The central result from the default scenarios is that same-speed Nectar capability becomes extremely valuable if a future ranking-point requirement demands more Hive tips. A two-second Nectar cycle penalty removes much of that advantage; when only two Nectar per cycle are guaranteed, the slower dual strategy often scores fewer points than remaining Pollen-only.
+The central result from the default scenarios is that same-speed Nectar capability becomes extremely valuable if a future ranking-point requirement demands more Hive tips. A two-second Nectar cycle penalty removes much of that advantage; when targeting only two Nectar per cycle, the slower dual strategy often scores fewer points than remaining Pollen-only.
 
 ## Run it
 

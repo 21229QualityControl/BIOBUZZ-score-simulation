@@ -187,7 +187,7 @@
           <div class="card-head">
             <div>
               <h2>Primary strategy configurations</h2>
-              <div class="subtle">Names are generated from the guaranteed Nectar count and added cycle time. Each entry is combined with every partner configuration.</div>
+              <div class="subtle">Names are generated from the Nectar target and added cycle time. Each entry is combined with every partner configuration.</div>
             </div>
             <button class="button small" id="add-primary-config">Add</button>
           </div>
@@ -252,7 +252,7 @@
           <li>Before 1:00 remaining, each tip introduces one held Nectar. At 1:00, every remaining held Nectar becomes available.</li>
           <li>Cycle durations are sampled uniformly from average minus jitter to average plus jitter.</li>
           <li>Batch reliability follows the requested Y-or-Y−1 model. A failed batch misses exactly one ball.</li>
-          <li>Preset names use “2N” or “3N” for the minimum number of Nectar collected in each primary-robot cycle.</li>
+          <li>Preset names use “2N” or “3N” for the Nectar target. Actual intake is limited by how many Nectar are currently available.</li>
           <li>Nectar that scores is unavailable while in the Cell and becomes available after the Hive tips. A missed Nectar returns to the available pool.</li>
           <li>Hive points equal 20 points per tip plus 2 points for each ball remaining in the active Cell at the end. “Extra points” is the dual-size total minus the Pollen-only total.</li>
           <li>The simulation does not model defense, travel geometry, Hive settling time, shot distance, or Flower scoring.</li>
@@ -293,14 +293,14 @@
       };
 
       const defaultPrimaryConfigs = [
-        { guaranteedNectar: 2, cyclePenalty: 0 },
-        { guaranteedNectar: 3, cyclePenalty: 0 },
-        { guaranteedNectar: 2, cyclePenalty: 2 },
-        { guaranteedNectar: 3, cyclePenalty: 2 },
+        { targetNectar: 2, cyclePenalty: 0 },
+        { targetNectar: 3, cyclePenalty: 0 },
+        { targetNectar: 2, cyclePenalty: 2 },
+        { targetNectar: 3, cyclePenalty: 2 },
       ];
 
       const primaryConfigDefaults = {
-        guaranteedNectar: 2,
+        targetNectar: 2,
         cyclePenalty: 0,
       };
 
@@ -374,7 +374,7 @@
       function renderConfigLists() {
         document.getElementById("primary-configs").innerHTML = primaryConfigs.map((config, index) => `
           <div class="config-row primary-config-row">
-            ${configNumberField("primary", index, "guaranteedNectar", "Minimum Nectar / cycle", config.guaranteedNectar, 0, 4)}
+            ${configNumberField("primary", index, "targetNectar", "Target Nectar / cycle (if available)", config.targetNectar, 0, 4)}
             ${configNumberField("primary", index, "cyclePenalty", "Extra Nectar cycle time (s)", config.cyclePenalty, 0, 20, .25)}
             <div class="config-actions">
               <button class="button small" data-config-action="duplicate" data-config-kind="primary" data-index="${index}">Duplicate</button>
@@ -394,7 +394,7 @@
       }
 
       function primaryConfigName(config) {
-        const nectar = Number(config.guaranteedNectar);
+        const nectar = Number(config.targetNectar);
         const penalty = Number(config.cyclePenalty);
         const penaltyLabel = penalty === 0 ? "Equal speed" : `+${Number.isInteger(penalty) ? penalty : penalty.toFixed(2).replace(/0+$/, "")}s`;
         return `${nectar}N · ${penaltyLabel}`;
@@ -411,7 +411,7 @@
         return primaryConfigs.flatMap(primaryConfig => partnerConfigs.map(partnerConfig => ({
           name: `${primaryConfigName(primaryConfig)} · ${partnerConfigName(partnerConfig)}`,
           ...primarySettings,
-          guaranteedNectar: primaryConfig.guaranteedNectar,
+          targetNectar: primaryConfig.targetNectar,
           strategyCycle: primarySettings.baselineCycle + primaryConfig.cyclePenalty,
           partnerCycle: partnerConfig.partnerCycle,
           partnerBalls: partnerConfig.partnerBalls,
@@ -426,7 +426,7 @@
               <h3 class="scenario-name">${escapeHtml(s.name)}</h3>
             </div>
             <div class="scenario-body">
-              <div class="input-help">Pollen cycle ${num(s.baselineCycle, 1)}s · Nectar cycle ${num(s.strategyCycle, 1)}s · Minimum ${s.guaranteedNectar} Nectar</div>
+              <div class="input-help">Pollen cycle ${num(s.baselineCycle, 1)}s · Nectar cycle ${num(s.strategyCycle, 1)}s · Target ${s.targetNectar} Nectar if available</div>
               <div class="results empty" id="result-${index}">Run simulation to calculate this scenario.</div>
               </div>
           </article>`).join("");
@@ -550,7 +550,7 @@
             continue;
           }
 
-          let requestedNectar = Math.min(scenario.guaranteedNectar, scenario.primaryBalls);
+          let requestedNectar = Math.min(scenario.targetNectar, scenario.primaryBalls);
           let actualNectar = Math.min(requestedNectar, availableNectar);
           availableNectar -= actualNectar;
           const remainingSlots = scenario.primaryBalls - actualNectar;
