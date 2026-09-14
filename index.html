@@ -265,8 +265,8 @@
         ["trials", "Trials / scenario", 1000, 100, 200000, 100],
         ["duration", "TELEOP seconds", 120, 30, 180, 1],
         ["pointsPerTip", "Points / tip", 20, 1, 100, 1],
-        ["startingTips", "Tips before TELEOP", 1, 0, 20, 1],
-        ["startingCellNectar", "Nectar already in Hive Cell", 0, 0, 8, 1],
+        ["startingTips", "Tips already earned", 1, 0, 20, 1],
+        ["startingCellNectar", "Nectar in Hive Cell", 0, 0, 8, 1],
         ["availableNectar", "Nectar available", 4, 0, 8, 1],
         ["heldNectar", "Nectar held by HP", 4, 0, 8, 1],
         ["releaseAt", "Release all at elapsed sec.", 60, 0, 120, 1],
@@ -346,7 +346,13 @@
 
       function renderGlobalInputs() {
         const container = document.getElementById("global-inputs");
-        container.innerHTML = globalDefinitions.map(([key, label, value, min, max, step]) => `
+        const sections = {
+          0: "Simulation",
+          3: "TELEOP starting state",
+          7: "During TELEOP",
+        };
+        container.innerHTML = globalDefinitions.map(([key, label, value, min, max, step], index) => `
+          ${sections[index] ? `<div class="group-title">${sections[index]}</div>` : ""}
           <div class="field">
             <label for="global-${key}">${label}</label>
             <input id="global-${key}" data-global="${key}" type="number" value="${value}" min="${min}" max="${max}" step="${step}" />
