@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BIOBUZZ Hive Cycle Simulator</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0d0d;
+        --surface: #111716;
+        --surface-2: #18201e;
+        --line: #2a3532;
+        --text: #edf4f1;
+        --muted: #9baba5;
+        --honey: #f5bd3d;
+        --honey-2: #7d5b13;
+        --nectar: #ee725e;
+        --green: #6ed5a4;
+        --red: #f08080;
+        --blue: #7ab8ff;
+        --shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 12% 0%, rgba(245, 189, 61, 0.13), transparent 34rem),
+          radial-gradient(circle at 94% 16%, rgba(110, 213, 164, 0.08), transparent 31rem),
+          var(--bg);
+        font: 15px/1.45 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button, input, select { font: inherit; }
+      button { cursor: pointer; }
+
+      .shell { width: min(1500px, calc(100% - 32px)); margin: 0 auto; padding: 34px 0 72px; }
+      .hero { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; margin-bottom: 24px; }
+      .eyebrow { color: var(--honey); font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+      h1 { margin: 7px 0 8px; font-size: clamp(30px, 5vw, 54px); line-height: 1; letter-spacing: -.045em; }
+      .hero p { max-width: 810px; margin: 0; color: var(--muted); font-size: 16px; }
+      .hero-mark {
+        width: 82px; aspect-ratio: 1; border: 1px solid var(--honey-2); border-radius: 24px;
+        display: grid; place-items: center; color: var(--honey); font-size: 34px;
+        background: linear-gradient(145deg, rgba(245,189,61,.16), rgba(245,189,61,.025));
+        box-shadow: var(--shadow);
+      }
+
+      .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 24px; }
+      .button {
+        border: 1px solid var(--line); border-radius: 11px; padding: 10px 14px;
+        color: var(--text); background: var(--surface-2); font-weight: 750;
+      }
+      .button:hover { border-color: #52625d; transform: translateY(-1px); }
+      .button.primary { color: #1c1505; border-color: var(--honey); background: var(--honey); }
+      .button.danger { color: #ffb2a9; }
+      .button.small { padding: 7px 10px; font-size: 12px; }
+
+      .card { border: 1px solid var(--line); border-radius: 18px; background: rgba(17, 23, 22, .94); box-shadow: var(--shadow); }
+      .global-card { padding: 20px; margin-bottom: 24px; }
+      .card-head { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 16px; }
+      .card-head h2, .card-head h3 { margin: 0; letter-spacing: -.025em; }
+      .subtle { color: var(--muted); font-size: 13px; }
+      .grid { display: grid; grid-template-columns: repeat(6, minmax(105px, 1fr)); gap: 12px; }
+      .field { min-width: 0; }
+      .field label { display: block; margin: 0 0 6px; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+      .field input, .field select {
+        width: 100%; min-height: 39px; border: 1px solid var(--line); border-radius: 9px;
+        padding: 8px 9px; color: var(--text); background: #0c1110; outline: none;
+      }
+      .field input:focus, .field select:focus { border-color: var(--honey); box-shadow: 0 0 0 3px rgba(245,189,61,.1); }
+
+      .scenarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+      .scenario { overflow: hidden; }
+      .scenario-top { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+      .scenario-title { width: 100%; border: 0; padding: 0; color: var(--text); background: transparent; font-size: 18px; font-weight: 850; outline: 0; }
+      .scenario-actions { display: flex; gap: 6px; flex-shrink: 0; }
+      .scenario-body { padding: 17px; }
+      .scenario-inputs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
+      .group-title { grid-column: 1 / -1; display: flex; align-items: center; gap: 9px; margin-top: 5px; color: var(--honey); font-size: 11px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+      .group-title::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+      .input-help { grid-column: 1 / -1; margin: -5px 0 2px; color: var(--muted); font-size: 12px; }
+
+      .results { margin-top: 17px; padding-top: 16px; border-top: 1px solid var(--line); }
+      .results.empty { color: var(--muted); text-align: center; padding: 24px 8px 8px; }
+      .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+      .metric { min-width: 0; padding: 11px; border: 1px solid var(--line); border-radius: 11px; background: #0c1110; }
+      .metric span { display: block; overflow: hidden; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .05em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+      .metric strong { display: block; margin-top: 3px; font-size: 21px; letter-spacing: -.035em; }
+      .metric strong.positive { color: var(--green); }
+      .metric strong.negative { color: var(--red); }
+      .probability { display: grid; grid-template-columns: var(--better, 0fr) var(--same, 1fr) var(--worse, 0fr); height: 12px; margin: 14px 0 7px; overflow: hidden; border-radius: 999px; background: var(--line); }
+      .probability .better { background: var(--green); }
+      .probability .same { background: #64736e; }
+      .probability .worse { background: var(--red); }
+      .prob-labels { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; }
+      .result-note { margin-top: 10px; color: var(--muted); font-size: 12px; }
+
+      .comparison { margin-top: 24px; overflow: hidden; }
+      .comparison .card-head { padding: 18px 20px 0; }
+      .table-wrap { overflow-x: auto; padding: 4px 20px 20px; }
+      table { width: 100%; min-width: 960px; border-collapse: collapse; }
+      th, td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+      th { color: var(--muted); font-size: 10px; letter-spacing: .05em; text-transform: uppercase; }
+      th:first-child, td:first-child { text-align: left; }
+      td:first-child { font-weight: 800; }
+      .pill { display: inline-block; min-width: 58px; padding: 4px 8px; border-radius: 999px; color: #0c1512; background: var(--green); font-weight: 850; text-align: center; }
+      .pill.negative { color: #25100d; background: var(--red); }
+
+      details { margin-top: 24px; padding: 17px 20px; }
+      details summary { cursor: pointer; font-weight: 850; }
+      details ul { margin-bottom: 0; color: var(--muted); }
+      .status { min-height: 20px; color: var(--muted); font-size: 13px; }
+
+      @media (max-width: 1050px) {
+        .grid { grid-template-columns: repeat(3, 1fr); }
+        .scenario-inputs { grid-template-columns: repeat(2, 1fr); }
+      }
+      @media (max-width: 820px) {
+        .scenarios { grid-template-columns: 1fr; }
+        .hero { grid-template-columns: 1fr; }
+        .hero-mark { display: none; }
+      }
+      @media (max-width: 560px) {
+        .shell { width: min(100% - 20px, 1500px); padding-top: 22px; }
+        .grid, .scenario-inputs, .metrics { grid-template-columns: repeat(2, 1fr); }
+        .scenario-top { align-items: flex-start; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="hero">
+        <div>
+          <div class="eyebrow">FTC 2026-27 · BIOBUZZ</div>
+          <h1>Hive cycle simulator</h1>
+          <p>Compare a Pollen-only primary robot with a slower dual-size robot. Every panel runs a paired Monte Carlo simulation using the same match randomness.</p>
+        </div>
+        <div class="hero-mark" aria-hidden="true">⬢</div>
+      </header>
+
+      <section class="card global-card">
+        <div class="card-head">
+          <div>
+            <h2>Shared match assumptions</h2>
+            <div class="subtle">Applied to every scenario below.</div>
+          </div>
+          <div class="status" id="status" aria-live="polite"></div>
+        </div>
+        <div class="grid" id="global-inputs"></div>
+      </section>
+
+      <div class="toolbar">
+        <button class="button primary" id="run-all">Run all simulations</button>
+        <button class="button" id="add-scenario">Add scenario</button>
+        <button class="button" id="reset">Reset examples</button>
+        <button class="button" id="download">Download comparison CSV</button>
+      </div>
+
+      <section class="scenarios" id="scenarios"></section>
+
+      <section class="card comparison">
+        <div class="card-head">
+          <div>
+            <h2>Scenario comparison</h2>
+            <div class="subtle">Expected results across every simulated match.</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Scenario</th>
+                <th>Pollen tips</th>
+                <th>Dual tips</th>
+                <th>Extra tips</th>
+                <th>Extra points</th>
+                <th>More tips</th>
+                <th>Same</th>
+                <th>Fewer</th>
+                <th>Pollen cycles</th>
+                <th>Dual cycles</th>
+                <th>7-tip RP: Pollen</th>
+                <th>7-tip RP: Dual</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-body"><tr><td colspan="12" class="subtle">Run the simulations to compare results.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <details class="card">
+        <summary>Model details and limitations</summary>
+        <ul>
+          <li>A Hive tip uses configurable progress units. Defaults reproduce 8 Pollen or 5 Nectar: Pollen = 5, Nectar = 8, threshold = 40.</li>
+          <li>At the default TELEOP start, one AUTO tip is already counted, the active Cell is empty, four Nectar are available, and four remain with the Human Player.</li>
+          <li>Before 1:00 remaining, each tip introduces one held Nectar. At 1:00, every remaining held Nectar becomes available.</li>
+          <li>Cycle durations are sampled uniformly from average minus jitter to average plus jitter.</li>
+          <li>Batch reliability follows the requested Y-or-Y−1 model. A failed batch misses exactly one ball.</li>
+          <li>Nectar that scores is unavailable while in the Cell and becomes available after the Hive tips. A missed Nectar returns to the available pool.</li>
+          <li>The simulation does not model defense, travel geometry, Hive settling time, shot distance, or Flower scoring.</li>
+        </ul>
+      </details>
+    </main>
+
+    <script>
+      const globalDefinitions = [
+        ["trials", "Trials / scenario", 1000, 100, 200000, 100],
+        ["duration", "TELEOP seconds", 120, 30, 180, 1],
+        ["pointsPerTip", "Points / tip", 20, 1, 100, 1],
+        ["startingTips", "Tips before TELEOP", 1, 0, 20, 1],
+        ["startingCellNectar", "Nectar already in Hive Cell", 0, 0, 8, 1],
+        ["availableNectar", "Nectar available", 4, 0, 8, 1],
+        ["heldNectar", "Nectar held by HP", 4, 0, 8, 1],
+        ["releaseAt", "Release all at elapsed sec.", 60, 0, 120, 1],
+      ];
+
+      const defaultScenarios = [
+        { name: "Partner: 1 Pollen / 20s", partnerCycle: 20, partnerBalls: 1 },
+        { name: "Partner: 2 Pollen / 20s", partnerCycle: 20, partnerBalls: 2 },
+        { name: "Partner: 1 Pollen / 15s", partnerCycle: 15, partnerBalls: 1 },
+        { name: "Partner: 2 Pollen / 15s", partnerCycle: 15, partnerBalls: 2 },
+        { name: "Partner: 3 Pollen / 15s", partnerCycle: 15, partnerBalls: 3 },
+        { name: "Partner: 4 Pollen / 15s", partnerCycle: 15, partnerBalls: 4 },
+      ];
+
+      const scenarioDefaults = {
+        name: "New scenario",
+        baselineCycle: 10,
+        strategyCycle: 12,
+        primaryJitter: 2,
+        primaryBalls: 4,
+        baselineAccuracy: 90,
+        strategyAccuracy: 90,
+        guaranteedNectar: 3,
+        extraNectarChance: 0,
+        firingOrder: "random",
+        partnerCycle: 20,
+        partnerJitter: 2,
+        partnerBalls: 1,
+        partnerAccuracy: 80,
+      };
+
+      let scenarios = [];
+      let results = [];
+
+      function mulberry32(seed) {
+        return function () {
+          let t = (seed += 0x6d2b79f5);
+          t = Math.imul(t ^ (t >>> 15), t | 1);
+          t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>'"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[c]);
+      }
+
+      function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+      function pct(value, digits = 1) { return `${(100 * value).toFixed(digits)}%`; }
+      function num(value, digits = 2) { return Number(value).toFixed(digits); }
+      function signed(value, digits = 1) { return `${value >= 0 ? "+" : ""}${Number(value).toFixed(digits)}`; }
+
+      function renderGlobalInputs() {
+        const container = document.getElementById("global-inputs");
+        container.innerHTML = globalDefinitions.map(([key, label, value, min, max, step]) => `
+          <div class="field">
+            <label for="global-${key}">${label}</label>
+            <input id="global-${key}" data-global="${key}" type="number" value="${value}" min="${min}" max="${max}" step="${step}" />
+          </div>`).join("");
+      }
+
+      function scenarioField(index, key, label, value, min, max, step = 1) {
+        return `<div class="field"><label>${label}</label><input data-index="${index}" data-key="${key}" type="number" value="${value}" min="${min}" max="${max}" step="${step}" /></div>`;
+      }
+
+      function renderScenarios() {
+        const container = document.getElementById("scenarios");
+        container.innerHTML = scenarios.map((s, index) => `
+          <article class="card scenario" data-card="${index}">
+            <div class="scenario-top">
+              <input class="scenario-title" aria-label="Scenario name" data-index="${index}" data-key="name" value="${escapeHtml(s.name)}" />
+              <div class="scenario-actions">
+                <button class="button small" data-action="duplicate" data-index="${index}">Duplicate</button>
+                <button class="button small danger" data-action="remove" data-index="${index}">Remove</button>
+              </div>
+            </div>
+            <div class="scenario-body">
+              <div class="scenario-inputs">
+                <div class="group-title">Primary robot</div>
+                <div class="input-help">A cycle includes finding and intaking the load, driving and aiming, then shooting. Accuracy is the chance that every ball in that cycle enters the Hive; otherwise exactly one misses.</div>
+                ${scenarioField(index, "baselineCycle", "Avg Pollen-only cycle (s)", s.baselineCycle, 2, 60, .25)}
+                ${scenarioField(index, "strategyCycle", "Avg cycle targeting Nectar (s)", s.strategyCycle, 2, 60, .25)}
+                ${scenarioField(index, "primaryJitter", "Cycle jitter ± sec.", s.primaryJitter, 0, 10, .25)}
+                ${scenarioField(index, "primaryBalls", "Balls intaken per cycle", s.primaryBalls, 1, 4, 1)}
+                ${scenarioField(index, "baselineAccuracy", "All Pollen enter Hive chance (%)", s.baselineAccuracy, 0, 100, 1)}
+                ${scenarioField(index, "strategyAccuracy", "All targeted balls enter Hive chance (%)", s.strategyAccuracy, 0, 100, 1)}
+                ${scenarioField(index, "guaranteedNectar", "Minimum Nectar intaken per cycle", s.guaranteedNectar, 0, 4, 1)}
+                ${scenarioField(index, "extraNectarChance", "Chance each other ball is Nectar (%)", s.extraNectarChance, 0, 100, 1)}
+                <div class="group-title">Partner robot</div>
+                ${scenarioField(index, "partnerCycle", "Average cycle (s)", s.partnerCycle, 2, 60, .25)}
+                ${scenarioField(index, "partnerJitter", "Cycle jitter ± sec.", s.partnerJitter, 0, 10, .25)}
+                ${scenarioField(index, "partnerBalls", "Pollen / cycle", s.partnerBalls, 1, 4, 1)}
+                ${scenarioField(index, "partnerAccuracy", "All partner Pollen enter Hive chance (%)", s.partnerAccuracy, 0, 100, 1)}
+              </div>
+              <div class="results empty" id="result-${index}">Run simulation to calculate this scenario.</div>
+            </div>
+          </article>`).join("");
+      }
+
+      function readGlobals() {
+        const values = {};
+        document.querySelectorAll("[data-global]").forEach(input => values[input.dataset.global] = Number(input.value));
+        values.trials = Math.round(clamp(values.trials, 100, 200000));
+        const randomSeed = new Uint32Array(1);
+        if (globalThis.crypto?.getRandomValues) globalThis.crypto.getRandomValues(randomSeed);
+        else randomSeed[0] = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+        values.seed = randomSeed[0];
+        // Fixed game-model constants: 8 Pollen or 5 Nectar tip the Hive.
+        values.pollenValue = 5;
+        values.nectarValue = 8;
+        values.tipThreshold = 40;
+        return values;
+      }
+
+      function syncScenarioInputs() {
+        document.querySelectorAll("[data-index][data-key]").forEach(input => {
+          const s = scenarios[Number(input.dataset.index)];
+          if (!s) return;
+          s[input.dataset.key] = input.dataset.key === "name" || input.tagName === "SELECT" ? input.value : Number(input.value);
+        });
+      }
+
+      function makeSchedule(uniforms, hitUniforms, missUniforms, mean, jitter, robot, balls, accuracy, duration) {
+        const events = [];
+        let time = 0;
+        let index = 0;
+        const low = Math.max(.05, mean - jitter);
+        const span = Math.max(0, 2 * jitter);
+        while (index < uniforms.length) {
+          time += low + span * uniforms[index];
+          if (time > duration) break;
+          const allHit = hitUniforms[index] < accuracy;
+          events.push({ time, robot, balls, missIndex: allHit ? -1 : Math.floor(missUniforms[index] * balls) });
+          index++;
+        }
+        return events;
+      }
+
+      function orderLoad(load, firingOrder, progress, globals, rng) {
+        if (firingOrder === "pollen-first") return load.sort((a, b) => a === "P" ? -1 : b === "P" ? 1 : 0);
+        if (firingOrder === "nectar-first") return load.sort((a, b) => a === "N" ? -1 : b === "N" ? 1 : 0);
+        if (firingOrder === "random") {
+          for (let i = load.length - 1; i > 0; i--) {
+            const j = Math.floor(rng() * (i + 1));
+            [load[i], load[j]] = [load[j], load[i]];
+          }
+          return load;
+        }
+        const ordered = [];
+        while (load.length) {
+          const hasP = load.includes("P");
+          const hasN = load.includes("N");
+          let choice;
+          if (hasP && progress + globals.pollenValue >= globals.tipThreshold) choice = "P";
+          else if (hasN && progress + globals.nectarValue >= globals.tipThreshold) choice = "N";
+          else choice = hasN ? "N" : "P";
+          load.splice(load.indexOf(choice), 1);
+          ordered.push(choice);
+          progress += choice === "N" ? globals.nectarValue : globals.pollenValue;
+          if (progress >= globals.tipThreshold) progress = 0;
+        }
+        return ordered;
+      }
+
+      function runMatch(events, scenario, globals, useNectar, rng) {
+        let progress = globals.startingCellNectar * globals.nectarValue;
+        let cellNectar = globals.startingCellNectar;
+        let availableNectar = globals.availableNectar;
+        let heldNectar = globals.heldNectar;
+        let releasedAll = false;
+        let tips = globals.startingTips;
+        let hits = 0;
+        let nectarHits = 0;
+
+        function shoot(type, hit) {
+          if (!hit) {
+            if (type === "N") availableNectar++;
+            return;
+          }
+          hits++;
+          progress += type === "N" ? globals.nectarValue : globals.pollenValue;
+          if (type === "N") { cellNectar++; nectarHits++; }
+          if (progress >= globals.tipThreshold) {
+            tips++;
+            progress = 0;
+            availableNectar += cellNectar;
+            cellNectar = 0;
+            if (heldNectar > 0) { availableNectar++; heldNectar--; }
+          }
+        }
+
+        for (const event of events) {
+          if (!releasedAll && event.time >= globals.releaseAt) {
+            availableNectar += heldNectar;
+            heldNectar = 0;
+            releasedAll = true;
+          }
+          if (event.robot === "partner" || !useNectar) {
+            for (let i = 0; i < event.balls; i++) shoot("P", i !== event.missIndex);
+            continue;
+          }
+
+          let requestedNectar = Math.min(scenario.guaranteedNectar, scenario.primaryBalls);
+          let actualNectar = Math.min(requestedNectar, availableNectar);
+          availableNectar -= actualNectar;
+          const remainingSlots = scenario.primaryBalls - actualNectar;
+          for (let slot = 0; slot < remainingSlots; slot++) {
+            if (availableNectar > 0 && rng() < scenario.extraNectarChance / 100) {
+              actualNectar++;
+              availableNectar--;
+            }
+          }
+          const load = orderLoad(
+            Array(actualNectar).fill("N").concat(Array(scenario.primaryBalls - actualNectar).fill("P")),
+            "random",
+            progress,
+            globals,
+            rng,
+          );
+          for (let i = 0; i < load.length; i++) shoot(load[i], i !== event.missIndex);
+        }
+        return { tips, hits, nectarHits };
+      }
+
+      function percentileDistribution(map, threshold) {
+        let total = 0;
+        for (const [key, count] of Object.entries(map)) if (Number(key) >= threshold) total += count;
+        return total;
+      }
+
+      function simulateScenario(scenario, globals, scenarioIndex) {
+        const rng = mulberry32((globals.seed + scenarioIndex * 7919) >>> 0);
+        const aggregate = {
+          baselineTips: 0, strategyTips: 0, baselineCycles: 0, strategyCycles: 0, partnerCycles: 0,
+          nectarHits: 0, better: 0, same: 0, worse: 0, baselineDist: {}, strategyDist: {},
+        };
+        const maxEvents = Math.ceil(globals.duration / Math.max(.1, Math.min(scenario.baselineCycle, scenario.strategyCycle, scenario.partnerCycle) - Math.max(scenario.primaryJitter, scenario.partnerJitter))) + 8;
+
+        for (let trial = 0; trial < globals.trials; trial++) {
+          const primaryTimes = Array.from({ length: maxEvents }, rng);
+          const primaryHits = Array.from({ length: maxEvents }, rng);
+          const primaryMisses = Array.from({ length: maxEvents }, rng);
+          const partnerTimes = Array.from({ length: maxEvents }, rng);
+          const partnerHits = Array.from({ length: maxEvents }, rng);
+          const partnerMisses = Array.from({ length: maxEvents }, rng);
+
+          const baselinePrimary = makeSchedule(primaryTimes, primaryHits, primaryMisses, scenario.baselineCycle, scenario.primaryJitter, "primary", scenario.primaryBalls, scenario.baselineAccuracy / 100, globals.duration);
+          const strategyPrimary = makeSchedule(primaryTimes, primaryHits, primaryMisses, scenario.strategyCycle, scenario.primaryJitter, "primary", scenario.primaryBalls, scenario.strategyAccuracy / 100, globals.duration);
+          const partner = makeSchedule(partnerTimes, partnerHits, partnerMisses, scenario.partnerCycle, scenario.partnerJitter, "partner", scenario.partnerBalls, scenario.partnerAccuracy / 100, globals.duration);
+          const baselineEvents = baselinePrimary.concat(partner).sort((a, b) => a.time - b.time || (a.robot === "partner" ? -1 : 1));
+          const strategyEvents = strategyPrimary.concat(partner).sort((a, b) => a.time - b.time || (a.robot === "partner" ? -1 : 1));
+
+          const baseline = runMatch(baselineEvents, scenario, globals, false, rng);
+          const strategy = runMatch(strategyEvents, scenario, globals, true, rng);
+          const delta = strategy.tips - baseline.tips;
+          aggregate.baselineTips += baseline.tips;
+          aggregate.strategyTips += strategy.tips;
+          aggregate.baselineCycles += baselinePrimary.length;
+          aggregate.strategyCycles += strategyPrimary.length;
+          aggregate.partnerCycles += partner.length;
+          aggregate.nectarHits += strategy.nectarHits;
+          if (delta > 0) aggregate.better++;
+          else if (delta < 0) aggregate.worse++;
+          else aggregate.same++;
+          aggregate.baselineDist[baseline.tips] = (aggregate.baselineDist[baseline.tips] || 0) + 1;
+          aggregate.strategyDist[strategy.tips] = (aggregate.strategyDist[strategy.tips] || 0) + 1;
+        }
+
+        const n = globals.trials;
+        const baselineTips = aggregate.baselineTips / n;
+        const strategyTips = aggregate.strategyTips / n;
+        return {
+          baselineTips,
+          strategyTips,
+          deltaTips: strategyTips - baselineTips,
+          deltaPoints: (strategyTips - baselineTips) * globals.pointsPerTip,
+          better: aggregate.better / n,
+          same: aggregate.same / n,
+          worse: aggregate.worse / n,
+          baselineCycles: aggregate.baselineCycles / n,
+          strategyCycles: aggregate.strategyCycles / n,
+          partnerCycles: aggregate.partnerCycles / n,
+          nectarHits: aggregate.nectarHits / n,
+          baselineRp4: percentileDistribution(aggregate.baselineDist, 4) / n,
+          strategyRp4: percentileDistribution(aggregate.strategyDist, 4) / n,
+          baselineRp7: percentileDistribution(aggregate.baselineDist, 7) / n,
+          strategyRp7: percentileDistribution(aggregate.strategyDist, 7) / n,
+        };
+      }
+
+      function renderResult(index, result) {
+        const el = document.getElementById(`result-${index}`);
+        const deltaClass = result.deltaPoints > .005 ? "positive" : result.deltaPoints < -.005 ? "negative" : "";
+        el.className = "results";
+        el.innerHTML = `
+          <div class="metrics">
+            <div class="metric"><span>Pollen tips</span><strong>${num(result.baselineTips)}</strong></div>
+            <div class="metric"><span>Dual tips</span><strong>${num(result.strategyTips)}</strong></div>
+            <div class="metric"><span>Extra points</span><strong class="${deltaClass}">${signed(result.deltaPoints)}</strong></div>
+            <div class="metric"><span>Nectar scored</span><strong>${num(result.nectarHits, 1)}</strong></div>
+            <div class="metric"><span>Pollen cycles</span><strong>${num(result.baselineCycles, 1)}</strong></div>
+            <div class="metric"><span>Dual cycles</span><strong>${num(result.strategyCycles, 1)}</strong></div>
+            <div class="metric"><span>7-tip RP Pollen</span><strong>${pct(result.baselineRp7, 0)}</strong></div>
+            <div class="metric"><span>7-tip RP Dual</span><strong>${pct(result.strategyRp7, 0)}</strong></div>
+          </div>
+          <div class="probability" style="--better:${result.better}fr;--same:${result.same}fr;--worse:${result.worse}fr">
+            <div class="better"></div><div class="same"></div><div class="worse"></div>
+          </div>
+          <div class="prob-labels"><span>More ${pct(result.better)}</span><span>Same ${pct(result.same)}</span><span>Fewer ${pct(result.worse)}</span></div>
+          <div class="result-note">Partner averages ${num(result.partnerCycles, 1)} cycles. The comparison includes ${num(result.deltaTips)} expected additional tips.</div>`;
+      }
+
+      function renderComparison() {
+        const body = document.getElementById("comparison-body");
+        if (!results.length) {
+          body.innerHTML = `<tr><td colspan="12" class="subtle">Run the simulations to compare results.</td></tr>`;
+          return;
+        }
+        body.innerHTML = results.map((r, i) => {
+          const cls = r.deltaPoints < 0 ? "negative" : "";
+          return `<tr>
+            <td>${escapeHtml(scenarios[i].name)}</td>
+            <td>${num(r.baselineTips)}</td><td>${num(r.strategyTips)}</td><td>${signed(r.deltaTips, 2)}</td>
+            <td><span class="pill ${cls}">${signed(r.deltaPoints, 1)}</span></td>
+            <td>${pct(r.better)}</td><td>${pct(r.same)}</td><td>${pct(r.worse)}</td>
+            <td>${num(r.baselineCycles, 1)}</td><td>${num(r.strategyCycles, 1)}</td>
+            <td>${pct(r.baselineRp7, 0)}</td><td>${pct(r.strategyRp7, 0)}</td>
+          </tr>`;
+        }).join("");
+      }
+
+      function runAll() {
+        syncScenarioInputs();
+        const globals = readGlobals();
+        const status = document.getElementById("status");
+        const button = document.getElementById("run-all");
+        button.disabled = true;
+        status.textContent = `Running ${globals.trials.toLocaleString()} trials × ${scenarios.length} scenarios…`;
+        setTimeout(() => {
+          const start = performance.now();
+          results = scenarios.map((scenario, index) => simulateScenario(scenario, globals, index));
+          results.forEach((result, index) => renderResult(index, result));
+          renderComparison();
+          status.textContent = `Completed ${(globals.trials * scenarios.length).toLocaleString()} matches in ${((performance.now() - start) / 1000).toFixed(2)}s.`;
+          button.disabled = false;
+        }, 20);
+      }
+
+      function reset() {
+        scenarios = defaultScenarios.map(s => ({ ...scenarioDefaults, ...s }));
+        results = [];
+        renderGlobalInputs();
+        renderScenarios();
+        renderComparison();
+        document.getElementById("status").textContent = "Examples restored.";
+      }
+
+      function downloadCsv() {
+        if (!results.length) return;
+        const header = ["Scenario", "Pollen tips", "Dual tips", "Extra tips", "Extra points", "More probability", "Same probability", "Fewer probability", "Pollen cycles", "Dual cycles", "Pollen 7-tip RP", "Dual 7-tip RP"];
+        const rows = results.map((r, i) => [scenarios[i].name, r.baselineTips, r.strategyTips, r.deltaTips, r.deltaPoints, r.better, r.same, r.worse, r.baselineCycles, r.strategyCycles, r.baselineRp7, r.strategyRp7]);
+        const csv = [header, ...rows].map(row => row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+        link.download = "biobuzz-simulation-comparison.csv";
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+
+      document.addEventListener("input", event => {
+        const input = event.target.closest("[data-index][data-key]");
+        if (!input) return;
+        const scenario = scenarios[Number(input.dataset.index)];
+        if (scenario) scenario[input.dataset.key] = input.dataset.key === "name" ? input.value : Number(input.value);
+      });
+      document.addEventListener("change", event => {
+        const select = event.target.closest("select[data-index]");
+        if (select) scenarios[Number(select.dataset.index)][select.dataset.key] = select.value;
+      });
+      document.addEventListener("click", event => {
+        const action = event.target.closest("[data-action]");
+        if (!action) return;
+        syncScenarioInputs();
+        const index = Number(action.dataset.index);
+        if (action.dataset.action === "duplicate") scenarios.splice(index + 1, 0, { ...scenarios[index], name: `${scenarios[index].name} copy` });
+        if (action.dataset.action === "remove" && scenarios.length > 1) scenarios.splice(index, 1);
+        results = [];
+        renderScenarios();
+        renderComparison();
+      });
+      document.getElementById("run-all").addEventListener("click", runAll);
+      document.getElementById("add-scenario").addEventListener("click", () => {
+        syncScenarioInputs(); scenarios.push({ ...scenarioDefaults }); results = []; renderScenarios(); renderComparison();
+      });
+      document.getElementById("reset").addEventListener("click", reset);
+      document.getElementById("download").addEventListener("click", downloadCsv);
+
+      reset();
+      setTimeout(runAll, 100);
+    </script>
+  </body>
+</html>
