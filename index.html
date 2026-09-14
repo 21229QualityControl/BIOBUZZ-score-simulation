@@ -76,8 +76,8 @@
 
       .scenarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
       .scenario { overflow: hidden; }
-      .scenario-top { display: flex; justify-content: space-between; gap: 14px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
-      .scenario-title { width: 100%; border: 0; padding: 0; color: var(--text); background: transparent; font-size: 18px; font-weight: 850; outline: 0; }
+      .scenario-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+      .scenario-title { flex: 1 1 340px; min-width: 0; border: 0; padding: 0; color: var(--text); background: transparent; font-size: 18px; font-weight: 850; outline: 0; }
       .scenario-actions { display: flex; gap: 6px; flex-shrink: 0; }
       .scenario-body { padding: 17px; }
       .scenario-inputs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
@@ -138,7 +138,7 @@
         <div>
           <div class="eyebrow">FTC 2026-27 · BIOBUZZ</div>
           <h1>Hive cycle simulator</h1>
-          <p>Compare a Pollen-only primary robot with a slower dual-size robot. Every panel runs a paired Monte Carlo simulation using the same match randomness.</p>
+          <p>Compare a Pollen-only primary robot with a dual-size robot, with or without a cycle-time penalty. Every panel runs a paired Monte Carlo simulation using the same match randomness.</p>
         </div>
         <div class="hero-mark" aria-hidden="true">⬢</div>
       </header>
@@ -178,17 +178,23 @@
                 <th>Pollen tips</th>
                 <th>Dual tips</th>
                 <th>Extra tips</th>
+                <th>Pollen points</th>
+                <th>Dual points</th>
                 <th>Extra points</th>
                 <th>More tips</th>
                 <th>Same</th>
                 <th>Fewer</th>
                 <th>Pollen cycles</th>
                 <th>Dual cycles</th>
-                <th>7-tip RP: Pollen</th>
-                <th>7-tip RP: Dual</th>
+                <th>Pollen ≥7 tips</th>
+                <th>Dual ≥7 tips</th>
+                <th>Pollen ≥8 tips</th>
+                <th>Dual ≥8 tips</th>
+                <th>Pollen ≥9 tips</th>
+                <th>Dual ≥9 tips</th>
               </tr>
             </thead>
-            <tbody id="comparison-body"><tr><td colspan="12" class="subtle">Run the simulations to compare results.</td></tr></tbody>
+            <tbody id="comparison-body"><tr><td colspan="18" class="subtle">Run the simulations to compare results.</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -202,6 +208,7 @@
           <li>Cycle durations are sampled uniformly from average minus jitter to average plus jitter.</li>
           <li>Batch reliability follows the requested Y-or-Y−1 model. A failed batch misses exactly one ball.</li>
           <li>Nectar that scores is unavailable while in the Cell and becomes available after the Hive tips. A missed Nectar returns to the available pool.</li>
+          <li>Hive points equal 20 points per tip plus 2 points for each ball remaining in the active Cell at the end. “Extra points” is the dual-size total minus the Pollen-only total.</li>
           <li>The simulation does not model defense, travel geometry, Hive settling time, shot distance, or Flower scoring.</li>
         </ul>
       </details>
@@ -220,12 +227,18 @@
       ];
 
       const defaultScenarios = [
-        { name: "Partner: 1 Pollen / 20s", partnerCycle: 20, partnerBalls: 1 },
-        { name: "Partner: 2 Pollen / 20s", partnerCycle: 20, partnerBalls: 2 },
-        { name: "Partner: 1 Pollen / 15s", partnerCycle: 15, partnerBalls: 1 },
-        { name: "Partner: 2 Pollen / 15s", partnerCycle: 15, partnerBalls: 2 },
-        { name: "Partner: 3 Pollen / 15s", partnerCycle: 15, partnerBalls: 3 },
-        { name: "Partner: 4 Pollen / 15s", partnerCycle: 15, partnerBalls: 4 },
+        { name: "Equal 10s · Partner 1/20s", strategyCycle: 10, partnerCycle: 20, partnerBalls: 1 },
+        { name: "Equal 10s · Partner 2/20s", strategyCycle: 10, partnerCycle: 20, partnerBalls: 2 },
+        { name: "Equal 10s · Partner 1/15s", strategyCycle: 10, partnerCycle: 15, partnerBalls: 1 },
+        { name: "Equal 10s · Partner 2/15s", strategyCycle: 10, partnerCycle: 15, partnerBalls: 2 },
+        { name: "Equal 10s · Partner 3/15s", strategyCycle: 10, partnerCycle: 15, partnerBalls: 3 },
+        { name: "Equal 10s · Partner 4/15s", strategyCycle: 10, partnerCycle: 15, partnerBalls: 4 },
+        { name: "Dual +2s · Partner 1/20s", partnerCycle: 20, partnerBalls: 1 },
+        { name: "Dual +2s · Partner 2/20s", partnerCycle: 20, partnerBalls: 2 },
+        { name: "Dual +2s · Partner 1/15s", partnerCycle: 15, partnerBalls: 1 },
+        { name: "Dual +2s · Partner 2/15s", partnerCycle: 15, partnerBalls: 2 },
+        { name: "Dual +2s · Partner 3/15s", partnerCycle: 15, partnerBalls: 3 },
+        { name: "Dual +2s · Partner 4/15s", partnerCycle: 15, partnerBalls: 4 },
       ];
 
       const scenarioDefaults = {
@@ -284,7 +297,7 @@
         container.innerHTML = scenarios.map((s, index) => `
           <article class="card scenario" data-card="${index}">
             <div class="scenario-top">
-              <input class="scenario-title" aria-label="Scenario name" data-index="${index}" data-key="name" value="${escapeHtml(s.name)}" />
+              <input class="scenario-title" aria-label="Scenario name" title="${escapeHtml(s.name)}" data-index="${index}" data-key="name" value="${escapeHtml(s.name)}" />
               <div class="scenario-actions">
                 <button class="button small" data-action="duplicate" data-index="${index}">Duplicate</button>
                 <button class="button small danger" data-action="remove" data-index="${index}">Remove</button>
@@ -387,6 +400,7 @@
         let tips = globals.startingTips;
         let hits = 0;
         let nectarHits = 0;
+        let remainingBalls = globals.startingCellNectar;
 
         function shoot(type, hit) {
           if (!hit) {
@@ -394,11 +408,13 @@
             return;
           }
           hits++;
+          remainingBalls++;
           progress += type === "N" ? globals.nectarValue : globals.pollenValue;
           if (type === "N") { cellNectar++; nectarHits++; }
           if (progress >= globals.tipThreshold) {
             tips++;
             progress = 0;
+            remainingBalls = 0;
             availableNectar += cellNectar;
             cellNectar = 0;
             if (heldNectar > 0) { availableNectar++; heldNectar--; }
@@ -435,7 +451,7 @@
           );
           for (let i = 0; i < load.length; i++) shoot(load[i], i !== event.missIndex);
         }
-        return { tips, hits, nectarHits };
+        return { tips, hits, nectarHits, remainingBalls };
       }
 
       function percentileDistribution(map, threshold) {
@@ -448,7 +464,7 @@
         const rng = mulberry32((globals.seed + scenarioIndex * 7919) >>> 0);
         const aggregate = {
           baselineTips: 0, strategyTips: 0, baselineCycles: 0, strategyCycles: 0, partnerCycles: 0,
-          nectarHits: 0, better: 0, same: 0, worse: 0, baselineDist: {}, strategyDist: {},
+          baselinePoints: 0, strategyPoints: 0, nectarHits: 0, better: 0, same: 0, worse: 0, baselineDist: {}, strategyDist: {},
         };
         const maxEvents = Math.ceil(globals.duration / Math.max(.1, Math.min(scenario.baselineCycle, scenario.strategyCycle, scenario.partnerCycle) - Math.max(scenario.primaryJitter, scenario.partnerJitter))) + 8;
 
@@ -468,9 +484,13 @@
 
           const baseline = runMatch(baselineEvents, scenario, globals, false, rng);
           const strategy = runMatch(strategyEvents, scenario, globals, true, rng);
+          const baselinePoints = baseline.tips * globals.pointsPerTip + baseline.remainingBalls * 2;
+          const strategyPoints = strategy.tips * globals.pointsPerTip + strategy.remainingBalls * 2;
           const delta = strategy.tips - baseline.tips;
           aggregate.baselineTips += baseline.tips;
           aggregate.strategyTips += strategy.tips;
+          aggregate.baselinePoints += baselinePoints;
+          aggregate.strategyPoints += strategyPoints;
           aggregate.baselineCycles += baselinePrimary.length;
           aggregate.strategyCycles += strategyPrimary.length;
           aggregate.partnerCycles += partner.length;
@@ -485,11 +505,15 @@
         const n = globals.trials;
         const baselineTips = aggregate.baselineTips / n;
         const strategyTips = aggregate.strategyTips / n;
+        const baselinePoints = aggregate.baselinePoints / n;
+        const strategyPoints = aggregate.strategyPoints / n;
         return {
           baselineTips,
           strategyTips,
           deltaTips: strategyTips - baselineTips,
-          deltaPoints: (strategyTips - baselineTips) * globals.pointsPerTip,
+          baselinePoints,
+          strategyPoints,
+          deltaPoints: strategyPoints - baselinePoints,
           better: aggregate.better / n,
           same: aggregate.same / n,
           worse: aggregate.worse / n,
@@ -501,6 +525,10 @@
           strategyRp4: percentileDistribution(aggregate.strategyDist, 4) / n,
           baselineRp7: percentileDistribution(aggregate.baselineDist, 7) / n,
           strategyRp7: percentileDistribution(aggregate.strategyDist, 7) / n,
+          baselineRp8: percentileDistribution(aggregate.baselineDist, 8) / n,
+          strategyRp8: percentileDistribution(aggregate.strategyDist, 8) / n,
+          baselineRp9: percentileDistribution(aggregate.baselineDist, 9) / n,
+          strategyRp9: percentileDistribution(aggregate.strategyDist, 9) / n,
         };
       }
 
@@ -512,12 +540,18 @@
           <div class="metrics">
             <div class="metric"><span>Pollen tips</span><strong>${num(result.baselineTips)}</strong></div>
             <div class="metric"><span>Dual tips</span><strong>${num(result.strategyTips)}</strong></div>
+            <div class="metric"><span>Pollen points</span><strong>${num(result.baselinePoints)}</strong></div>
+            <div class="metric"><span>Dual points</span><strong>${num(result.strategyPoints)}</strong></div>
             <div class="metric"><span>Extra points</span><strong class="${deltaClass}">${signed(result.deltaPoints)}</strong></div>
             <div class="metric"><span>Nectar scored</span><strong>${num(result.nectarHits, 1)}</strong></div>
             <div class="metric"><span>Pollen cycles</span><strong>${num(result.baselineCycles, 1)}</strong></div>
             <div class="metric"><span>Dual cycles</span><strong>${num(result.strategyCycles, 1)}</strong></div>
-            <div class="metric"><span>7-tip RP Pollen</span><strong>${pct(result.baselineRp7, 0)}</strong></div>
-            <div class="metric"><span>7-tip RP Dual</span><strong>${pct(result.strategyRp7, 0)}</strong></div>
+            <div class="metric"><span>Pollen ≥7 tips</span><strong>${pct(result.baselineRp7)}</strong></div>
+            <div class="metric"><span>Dual ≥7 tips</span><strong>${pct(result.strategyRp7)}</strong></div>
+            <div class="metric"><span>Pollen ≥8 tips</span><strong>${pct(result.baselineRp8)}</strong></div>
+            <div class="metric"><span>Dual ≥8 tips</span><strong>${pct(result.strategyRp8)}</strong></div>
+            <div class="metric"><span>Pollen ≥9 tips</span><strong>${pct(result.baselineRp9)}</strong></div>
+            <div class="metric"><span>Dual ≥9 tips</span><strong>${pct(result.strategyRp9)}</strong></div>
           </div>
           <div class="probability" style="--better:${result.better}fr;--same:${result.same}fr;--worse:${result.worse}fr">
             <div class="better"></div><div class="same"></div><div class="worse"></div>
@@ -529,7 +563,7 @@
       function renderComparison() {
         const body = document.getElementById("comparison-body");
         if (!results.length) {
-          body.innerHTML = `<tr><td colspan="12" class="subtle">Run the simulations to compare results.</td></tr>`;
+          body.innerHTML = `<tr><td colspan="18" class="subtle">Run the simulations to compare results.</td></tr>`;
           return;
         }
         body.innerHTML = results.map((r, i) => {
@@ -537,10 +571,13 @@
           return `<tr>
             <td>${escapeHtml(scenarios[i].name)}</td>
             <td>${num(r.baselineTips)}</td><td>${num(r.strategyTips)}</td><td>${signed(r.deltaTips, 2)}</td>
+            <td>${num(r.baselinePoints)}</td><td>${num(r.strategyPoints)}</td>
             <td><span class="pill ${cls}">${signed(r.deltaPoints, 1)}</span></td>
             <td>${pct(r.better)}</td><td>${pct(r.same)}</td><td>${pct(r.worse)}</td>
             <td>${num(r.baselineCycles, 1)}</td><td>${num(r.strategyCycles, 1)}</td>
-            <td>${pct(r.baselineRp7, 0)}</td><td>${pct(r.strategyRp7, 0)}</td>
+            <td>${pct(r.baselineRp7)}</td><td>${pct(r.strategyRp7)}</td>
+            <td>${pct(r.baselineRp8)}</td><td>${pct(r.strategyRp8)}</td>
+            <td>${pct(r.baselineRp9)}</td><td>${pct(r.strategyRp9)}</td>
           </tr>`;
         }).join("");
       }
@@ -573,8 +610,8 @@
 
       function downloadCsv() {
         if (!results.length) return;
-        const header = ["Scenario", "Pollen tips", "Dual tips", "Extra tips", "Extra points", "More probability", "Same probability", "Fewer probability", "Pollen cycles", "Dual cycles", "Pollen 7-tip RP", "Dual 7-tip RP"];
-        const rows = results.map((r, i) => [scenarios[i].name, r.baselineTips, r.strategyTips, r.deltaTips, r.deltaPoints, r.better, r.same, r.worse, r.baselineCycles, r.strategyCycles, r.baselineRp7, r.strategyRp7]);
+        const header = ["Scenario", "Pollen tips", "Dual tips", "Extra tips", "Pollen points", "Dual points", "Extra points", "More probability", "Same probability", "Fewer probability", "Pollen cycles", "Dual cycles", "Pollen >=7 tips", "Dual >=7 tips", "Pollen >=8 tips", "Dual >=8 tips", "Pollen >=9 tips", "Dual >=9 tips"];
+        const rows = results.map((r, i) => [scenarios[i].name, r.baselineTips, r.strategyTips, r.deltaTips, r.baselinePoints, r.strategyPoints, r.deltaPoints, r.better, r.same, r.worse, r.baselineCycles, r.strategyCycles, r.baselineRp7, r.strategyRp7, r.baselineRp8, r.strategyRp8, r.baselineRp9, r.strategyRp9]);
         const csv = [header, ...rows].map(row => row.map(cell => `"${String(cell).replaceAll('"', '""')}"`).join(",")).join("\n");
         const link = document.createElement("a");
         link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
