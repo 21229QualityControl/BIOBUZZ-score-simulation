@@ -2,7 +2,7 @@
 
 A standalone Monte Carlo simulator for comparing FTC BIOBUZZ Hive-scoring strategies.
 
-It compares a Pollen-only primary robot with a dual-size robot that targets Nectar, including:
+It compares a Pollen-only primary robot with a primary robot capable of intaking and shooting both Pollen and Nectar, including:
 
 - Shared primary-robot settings that apply to every simulation
 - Reusable primary strategy configurations for targeted Nectar count and added cycle time
@@ -26,3 +26,5 @@ The central result from the default scenarios is that same-speed Nectar capabili
 Open `index.html` in a browser. The simulator has no build step, server, or external dependencies.
 
 The included values are editable starting assumptions, not predictions of actual field performance. Validate the tipping and shooting assumptions with real game pieces and an official field element.
+
+Public page-load and completed-simulation counters are provided by the hosted GoatCounter service. Displayed totals may be cached for up to four hours.
