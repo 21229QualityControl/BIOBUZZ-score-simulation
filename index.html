@@ -79,7 +79,7 @@
       .config-list { display: grid; gap: 10px; }
       .config-row { display: grid; gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #0c1110; }
       .primary-config-row { grid-template-columns: repeat(2, minmax(130px, 1fr)) auto; }
-      .partner-config-row { grid-template-columns: repeat(3, minmax(120px, 1fr)) auto; }
+      .partner-config-row { grid-template-columns: repeat(2, minmax(140px, 1fr)) auto; }
       .config-row .field input { background: var(--surface); }
       .config-actions { display: flex; gap: 6px; align-items: center; }
 
@@ -266,6 +266,7 @@
         ["duration", "TELEOP seconds", 120, 30, 180, 1],
         ["pointsPerTip", "Points / tip", 20, 1, 100, 1],
         ["partnerAccuracy", "All partner Pollen enter Hive chance (%)", 80, 0, 100, 1],
+        ["partnerJitter", "Partner cycle jitter ± sec.", 2, 0, 10, .25],
         ["startingTips", "Tips already earned", 1, 0, 20, 1],
         ["startingCellNectar", "Nectar in Hive Cell", 0, 0, 8, 1],
         ["availableNectar", "Nectar available", 4, 0, 8, 1],
@@ -314,7 +315,6 @@
 
       const partnerConfigDefaults = {
         partnerCycle: 20,
-        partnerJitter: 2,
         partnerBalls: 1,
       };
 
@@ -347,8 +347,8 @@
         const sections = {
           0: "Simulation",
           3: "Shared partner setting",
-          4: "TELEOP starting state",
-          8: "During TELEOP",
+          5: "TELEOP starting state",
+          9: "During TELEOP",
         };
         container.innerHTML = globalDefinitions.map(([key, label, value, min, max, step], index) => `
           ${sections[index] ? `<div class="group-title">${sections[index]}</div>` : ""}
@@ -385,7 +385,6 @@
         document.getElementById("partner-configs").innerHTML = partnerConfigs.map((config, index) => `
           <div class="config-row partner-config-row">
             ${configNumberField("partner", index, "partnerCycle", "Avg cycle (s)", config.partnerCycle, 2, 60, .25)}
-            ${configNumberField("partner", index, "partnerJitter", "Jitter ± sec.", config.partnerJitter, 0, 10, .25)}
             ${configNumberField("partner", index, "partnerBalls", "Pollen / cycle", config.partnerBalls, 1, 4)}
             <div class="config-actions">
               <button class="button small" data-config-action="duplicate" data-config-kind="partner" data-index="${index}">Duplicate</button>
@@ -415,7 +414,6 @@
           guaranteedNectar: primaryConfig.guaranteedNectar,
           strategyCycle: primarySettings.baselineCycle + primaryConfig.cyclePenalty,
           partnerCycle: partnerConfig.partnerCycle,
-          partnerJitter: partnerConfig.partnerJitter,
           partnerBalls: partnerConfig.partnerBalls,
         })));
       }
@@ -586,7 +584,7 @@
           baselineTips: 0, strategyTips: 0, baselineCycles: 0, strategyCycles: 0, partnerCycles: 0,
           baselinePoints: 0, strategyPoints: 0, nectarHits: 0, better: 0, same: 0, worse: 0, baselineDist: {}, strategyDist: {},
         };
-        const maxEvents = Math.ceil(globals.duration / Math.max(.1, Math.min(scenario.baselineCycle, scenario.strategyCycle, scenario.partnerCycle) - Math.max(scenario.primaryJitter, scenario.partnerJitter))) + 8;
+          const maxEvents = Math.ceil(globals.duration / Math.max(.1, Math.min(scenario.baselineCycle, scenario.strategyCycle, scenario.partnerCycle) - Math.max(scenario.primaryJitter, globals.partnerJitter))) + 8;
 
         for (let trial = 0; trial < globals.trials; trial++) {
           const primaryTimes = Array.from({ length: maxEvents }, rng);
@@ -598,7 +596,7 @@
 
           const baselinePrimary = makeSchedule(primaryTimes, primaryHits, primaryMisses, scenario.baselineCycle, scenario.primaryJitter, "primary", scenario.primaryBalls, scenario.baselineAccuracy / 100, globals.duration);
           const strategyPrimary = makeSchedule(primaryTimes, primaryHits, primaryMisses, scenario.strategyCycle, scenario.primaryJitter, "primary", scenario.primaryBalls, scenario.strategyAccuracy / 100, globals.duration);
-          const partner = makeSchedule(partnerTimes, partnerHits, partnerMisses, scenario.partnerCycle, scenario.partnerJitter, "partner", scenario.partnerBalls, globals.partnerAccuracy / 100, globals.duration);
+          const partner = makeSchedule(partnerTimes, partnerHits, partnerMisses, scenario.partnerCycle, globals.partnerJitter, "partner", scenario.partnerBalls, globals.partnerAccuracy / 100, globals.duration);
           const baselineEvents = baselinePrimary.concat(partner).sort((a, b) => a.time - b.time || (a.robot === "partner" ? -1 : 1));
           const strategyEvents = strategyPrimary.concat(partner).sort((a, b) => a.time - b.time || (a.robot === "partner" ? -1 : 1));
 
