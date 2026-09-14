@@ -17,6 +17,8 @@ It compares a Pollen-only primary robot with a dual-size robot that targets Nect
 
 Hive score is modeled as 20 points per tip plus 2 points for each ball left in the active Cell when TELEOP ends.
 
+The central result from the default scenarios is that same-speed Nectar capability becomes extremely valuable if a future ranking-point requirement demands more Hive tips. Even a two-second Nectar cycle penalty removes much of that advantage.
+
 ## Run it
 
 Open `index.html` in a browser. The simulator has no build step, server, or external dependencies.

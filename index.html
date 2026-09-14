@@ -102,6 +102,8 @@
 
       .comparison { margin-top: 24px; overflow: hidden; }
       .comparison .card-head { padding: 18px 20px 0; }
+      .comparison-insight { margin-top: 7px; color: var(--text); font-size: 13px; }
+      .comparison-insight strong { color: var(--honey); }
       .table-wrap { overflow-x: auto; padding: 4px 20px 20px; }
       table { width: 100%; min-width: 960px; border-collapse: collapse; }
       th, td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
@@ -167,7 +169,8 @@
         <div class="card-head">
           <div>
             <h2>Scenario comparison</h2>
-            <div class="subtle">Expected results across every simulated match.</div>
+            <div class="subtle">A compact view of scoring improvement and possible future RP thresholds.</div>
+            <div class="comparison-insight"><strong>Key finding:</strong> Same-speed Nectar becomes extremely valuable as the required number of tips rises.</div>
           </div>
         </div>
         <div class="table-wrap">
@@ -175,26 +178,17 @@
             <thead>
               <tr>
                 <th>Scenario</th>
-                <th>Pollen tips</th>
-                <th>Dual tips</th>
                 <th>Extra tips</th>
-                <th>Pollen points</th>
-                <th>Dual points</th>
                 <th>Extra points</th>
-                <th>More tips</th>
-                <th>Same</th>
-                <th>Fewer</th>
-                <th>Pollen cycles</th>
-                <th>Dual cycles</th>
-                <th>Pollen ≥7 tips</th>
-                <th>Dual ≥7 tips</th>
-                <th>Pollen ≥8 tips</th>
-                <th>Dual ≥8 tips</th>
-                <th>Pollen ≥9 tips</th>
-                <th>Dual ≥9 tips</th>
+                <th>Pollen ≥7</th>
+                <th>Dual ≥7</th>
+                <th>Pollen ≥8</th>
+                <th>Dual ≥8</th>
+                <th>Pollen ≥9</th>
+                <th>Dual ≥9</th>
               </tr>
             </thead>
-            <tbody id="comparison-body"><tr><td colspan="18" class="subtle">Run the simulations to compare results.</td></tr></tbody>
+            <tbody id="comparison-body"><tr><td colspan="9" class="subtle">Run the simulations to compare results.</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -563,18 +557,15 @@
       function renderComparison() {
         const body = document.getElementById("comparison-body");
         if (!results.length) {
-          body.innerHTML = `<tr><td colspan="18" class="subtle">Run the simulations to compare results.</td></tr>`;
+          body.innerHTML = `<tr><td colspan="9" class="subtle">Run the simulations to compare results.</td></tr>`;
           return;
         }
         body.innerHTML = results.map((r, i) => {
           const cls = r.deltaPoints < 0 ? "negative" : "";
           return `<tr>
             <td>${escapeHtml(scenarios[i].name)}</td>
-            <td>${num(r.baselineTips)}</td><td>${num(r.strategyTips)}</td><td>${signed(r.deltaTips, 2)}</td>
-            <td>${num(r.baselinePoints)}</td><td>${num(r.strategyPoints)}</td>
+            <td>${signed(r.deltaTips, 2)}</td>
             <td><span class="pill ${cls}">${signed(r.deltaPoints, 1)}</span></td>
-            <td>${pct(r.better)}</td><td>${pct(r.same)}</td><td>${pct(r.worse)}</td>
-            <td>${num(r.baselineCycles, 1)}</td><td>${num(r.strategyCycles, 1)}</td>
             <td>${pct(r.baselineRp7)}</td><td>${pct(r.strategyRp7)}</td>
             <td>${pct(r.baselineRp8)}</td><td>${pct(r.strategyRp8)}</td>
             <td>${pct(r.baselineRp9)}</td><td>${pct(r.strategyRp9)}</td>
