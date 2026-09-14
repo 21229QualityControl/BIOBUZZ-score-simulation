@@ -170,7 +170,7 @@
           <div>
             <h2>Scenario comparison</h2>
             <div class="subtle">A compact view of scoring improvement and possible future RP thresholds.</div>
-            <div class="comparison-insight"><strong>Key finding:</strong> Same-speed Nectar becomes extremely valuable as the required number of tips rises.</div>
+            <div class="comparison-insight"><strong>Key finding:</strong> Same-speed Nectar becomes extremely valuable as the required number of tips rises. With a +2s penalty, guaranteeing only 2N often scores less than staying Pollen-only.</div>
           </div>
         </div>
         <div class="table-wrap">
@@ -203,6 +203,7 @@
           <li>Before 1:00 remaining, each tip introduces one held Nectar. At 1:00, every remaining held Nectar becomes available.</li>
           <li>Cycle durations are sampled uniformly from average minus jitter to average plus jitter.</li>
           <li>Batch reliability follows the requested Y-or-Y−1 model. A failed batch misses exactly one ball.</li>
+          <li>Preset names use “2N” or “3N” for the minimum number of Nectar collected in each primary-robot cycle.</li>
           <li>Nectar that scores is unavailable while in the Cell and becomes available after the Hive tips. A missed Nectar returns to the available pool.</li>
           <li>Hive points equal 20 points per tip plus 2 points for each ball remaining in the active Cell at the end. “Extra points” is the dual-size total minus the Pollen-only total.</li>
           <li>The simulation does not model defense, travel geometry, Hive settling time, shot distance, or Flower scoring.</li>
@@ -222,19 +223,24 @@
         ["releaseAt", "Release all at elapsed sec.", 60, 0, 120, 1],
       ];
 
+      const partnerPresets = [
+        { label: "1/20s", partnerCycle: 20, partnerBalls: 1 },
+        { label: "2/20s", partnerCycle: 20, partnerBalls: 2 },
+        { label: "1/15s", partnerCycle: 15, partnerBalls: 1 },
+        { label: "2/15s", partnerCycle: 15, partnerBalls: 2 },
+        { label: "3/15s", partnerCycle: 15, partnerBalls: 3 },
+        { label: "4/15s", partnerCycle: 15, partnerBalls: 4 },
+      ];
+
       const defaultScenarios = [
-        { name: "Equal 10s · Partner 1/20s", strategyCycle: 10, partnerCycle: 20, partnerBalls: 1 },
-        { name: "Equal 10s · Partner 2/20s", strategyCycle: 10, partnerCycle: 20, partnerBalls: 2 },
-        { name: "Equal 10s · Partner 1/15s", strategyCycle: 10, partnerCycle: 15, partnerBalls: 1 },
-        { name: "Equal 10s · Partner 2/15s", strategyCycle: 10, partnerCycle: 15, partnerBalls: 2 },
-        { name: "Equal 10s · Partner 3/15s", strategyCycle: 10, partnerCycle: 15, partnerBalls: 3 },
-        { name: "Equal 10s · Partner 4/15s", strategyCycle: 10, partnerCycle: 15, partnerBalls: 4 },
-        { name: "Dual +2s · Partner 1/20s", partnerCycle: 20, partnerBalls: 1 },
-        { name: "Dual +2s · Partner 2/20s", partnerCycle: 20, partnerBalls: 2 },
-        { name: "Dual +2s · Partner 1/15s", partnerCycle: 15, partnerBalls: 1 },
-        { name: "Dual +2s · Partner 2/15s", partnerCycle: 15, partnerBalls: 2 },
-        { name: "Dual +2s · Partner 3/15s", partnerCycle: 15, partnerBalls: 3 },
-        { name: "Dual +2s · Partner 4/15s", partnerCycle: 15, partnerBalls: 4 },
+        ...partnerPresets.flatMap(({ label, ...partner }) => [
+          { name: `2N · Equal 10s · Partner ${label}`, guaranteedNectar: 2, strategyCycle: 10, ...partner },
+          { name: `3N · Equal 10s · Partner ${label}`, guaranteedNectar: 3, strategyCycle: 10, ...partner },
+        ]),
+        ...partnerPresets.flatMap(({ label, ...partner }) => [
+          { name: `2N · Dual +2s · Partner ${label}`, guaranteedNectar: 2, ...partner },
+          { name: `3N · Dual +2s · Partner ${label}`, guaranteedNectar: 3, ...partner },
+        ]),
       ];
 
       const scenarioDefaults = {
