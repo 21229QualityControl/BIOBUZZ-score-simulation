@@ -180,6 +180,8 @@
                 <th>Scenario</th>
                 <th>Extra tips</th>
                 <th>Extra points</th>
+                <th>Pollen tips</th>
+                <th>Dual tips</th>
                 <th>Pollen ≥7</th>
                 <th>Dual ≥7</th>
                 <th>Pollen ≥8</th>
@@ -188,7 +190,7 @@
                 <th>Dual ≥9</th>
               </tr>
             </thead>
-            <tbody id="comparison-body"><tr><td colspan="9" class="subtle">Run the simulations to compare results.</td></tr></tbody>
+            <tbody id="comparison-body"><tr><td colspan="11" class="subtle">Run the simulations to compare results.</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -557,7 +559,7 @@
       function renderComparison() {
         const body = document.getElementById("comparison-body");
         if (!results.length) {
-          body.innerHTML = `<tr><td colspan="9" class="subtle">Run the simulations to compare results.</td></tr>`;
+          body.innerHTML = `<tr><td colspan="11" class="subtle">Run the simulations to compare results.</td></tr>`;
           return;
         }
         body.innerHTML = results.map((r, i) => {
@@ -566,6 +568,7 @@
             <td>${escapeHtml(scenarios[i].name)}</td>
             <td>${signed(r.deltaTips, 2)}</td>
             <td><span class="pill ${cls}">${signed(r.deltaPoints, 1)}</span></td>
+            <td>${num(r.baselineTips)}</td><td>${num(r.strategyTips)}</td>
             <td>${pct(r.baselineRp7)}</td><td>${pct(r.strategyRp7)}</td>
             <td>${pct(r.baselineRp8)}</td><td>${pct(r.strategyRp8)}</td>
             <td>${pct(r.baselineRp9)}</td><td>${pct(r.strategyRp9)}</td>
