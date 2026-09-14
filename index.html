@@ -85,6 +85,9 @@
 
       .scenarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
       .scenario { overflow: hidden; }
+      .scenario-placeholder { grid-column: 1 / -1; padding: 30px 20px; text-align: center; }
+      .scenario-placeholder h2 { margin: 0 0 6px; }
+      .scenario-placeholder p { margin: 0; color: var(--muted); }
       .scenario-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
       .scenario-title { flex: 1 1 340px; min-width: 0; border: 0; padding: 0; color: var(--text); background: transparent; font-size: 18px; font-weight: 850; outline: 0; }
       .scenario-name { margin: 0; font-size: 18px; letter-spacing: -.02em; }
@@ -420,6 +423,14 @@
           </article>`).join("");
       }
 
+      function renderScenarioPlaceholder() {
+        document.getElementById("scenarios").innerHTML = `
+          <section class="card scenario-placeholder">
+            <h2>Scenario results</h2>
+            <p>${scenarios.length} combinations are ready. Click “Run all simulations” to calculate and display them.</p>
+          </section>`;
+      }
+
       function readGlobals() {
         const values = {};
         document.querySelectorAll("[data-global]").forEach(input => values[input.dataset.global] = Number(input.value));
@@ -682,7 +693,7 @@
         syncConfigInputs();
         scenarios = buildScenarios();
         results = [];
-        renderScenarios();
+        renderScenarioPlaceholder();
         renderComparison();
         const globals = readGlobals();
         const status = document.getElementById("status");
@@ -692,6 +703,7 @@
         setTimeout(() => {
           const start = performance.now();
           results = scenarios.map((scenario, index) => simulateScenario(scenario, globals, index));
+          renderScenarios();
           results.forEach((result, index) => renderResult(index, result));
           renderComparison();
           status.textContent = `Completed ${(globals.trials * scenarios.length).toLocaleString()} matches in ${((performance.now() - start) / 1000).toFixed(2)}s.`;
@@ -708,7 +720,7 @@
         renderGlobalInputs();
         renderPrimaryInputs();
         renderConfigLists();
-        renderScenarios();
+        renderScenarioPlaceholder();
         renderComparison();
         document.getElementById("status").textContent = `${scenarios.length} scenario combinations ready.`;
       }
@@ -749,7 +761,7 @@
         scenarios = buildScenarios();
         results = [];
         renderConfigLists();
-        renderScenarios();
+        renderScenarioPlaceholder();
         renderComparison();
         document.getElementById("status").textContent = `${scenarios.length} scenario combinations ready.`;
       });
@@ -760,7 +772,7 @@
         scenarios = buildScenarios();
         results = [];
         renderConfigLists();
-        renderScenarios();
+        renderScenarioPlaceholder();
         renderComparison();
         document.getElementById("status").textContent = `${scenarios.length} scenario combinations ready.`;
       });
@@ -770,7 +782,7 @@
         scenarios = buildScenarios();
         results = [];
         renderConfigLists();
-        renderScenarios();
+        renderScenarioPlaceholder();
         renderComparison();
         document.getElementById("status").textContent = `${scenarios.length} scenario combinations ready.`;
       });
