@@ -78,8 +78,8 @@
       .config-card { padding: 20px; }
       .config-list { display: grid; gap: 10px; }
       .config-row { display: grid; gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #0c1110; }
-      .primary-config-row { grid-template-columns: minmax(150px, 1.5fr) repeat(2, minmax(110px, 1fr)) auto; }
-      .partner-config-row { grid-template-columns: minmax(145px, 1.4fr) repeat(4, minmax(90px, 1fr)) auto; }
+      .primary-config-row { grid-template-columns: repeat(2, minmax(130px, 1fr)) auto; }
+      .partner-config-row { grid-template-columns: repeat(3, minmax(120px, 1fr)) auto; }
       .config-row .field input { background: var(--surface); }
       .config-actions { display: flex; gap: 6px; align-items: center; }
 
@@ -187,7 +187,7 @@
           <div class="card-head">
             <div>
               <h2>Primary strategy configurations</h2>
-              <div class="subtle">Vary only the guaranteed Nectar count and added Nectar-cycle time. Each entry is combined with every partner configuration.</div>
+              <div class="subtle">Names are generated from the guaranteed Nectar count and added cycle time. Each entry is combined with every partner configuration.</div>
             </div>
             <button class="button small" id="add-primary-config">Add</button>
           </div>
@@ -198,7 +198,7 @@
           <div class="card-head">
             <div>
               <h2>Partner configurations</h2>
-              <div class="subtle">Define each partner once and reuse it across every primary strategy.</div>
+              <div class="subtle">Names are generated from Pollen per cycle and average cycle time. Each partner is reused across every primary strategy.</div>
             </div>
             <button class="button small" id="add-partner-config">Add</button>
           </div>
@@ -265,6 +265,7 @@
         ["trials", "Trials / scenario", 1000, 100, 200000, 100],
         ["duration", "TELEOP seconds", 120, 30, 180, 1],
         ["pointsPerTip", "Points / tip", 20, 1, 100, 1],
+        ["partnerAccuracy", "All partner Pollen enter Hive chance (%)", 80, 0, 100, 1],
         ["startingTips", "Tips already earned", 1, 0, 20, 1],
         ["startingCellNectar", "Nectar in Hive Cell", 0, 0, 8, 1],
         ["availableNectar", "Nectar available", 4, 0, 8, 1],
@@ -291,33 +292,30 @@
       };
 
       const defaultPrimaryConfigs = [
-        { name: "2N · Equal speed", guaranteedNectar: 2, cyclePenalty: 0 },
-        { name: "3N · Equal speed", guaranteedNectar: 3, cyclePenalty: 0 },
-        { name: "2N · +2s", guaranteedNectar: 2, cyclePenalty: 2 },
-        { name: "3N · +2s", guaranteedNectar: 3, cyclePenalty: 2 },
+        { guaranteedNectar: 2, cyclePenalty: 0 },
+        { guaranteedNectar: 3, cyclePenalty: 0 },
+        { guaranteedNectar: 2, cyclePenalty: 2 },
+        { guaranteedNectar: 3, cyclePenalty: 2 },
       ];
 
       const primaryConfigDefaults = {
-        name: "New primary strategy",
         guaranteedNectar: 2,
         cyclePenalty: 0,
       };
 
       const defaultPartnerConfigs = [
-        { name: "Partner 1/20s", partnerCycle: 20, partnerBalls: 1 },
-        { name: "Partner 2/20s", partnerCycle: 20, partnerBalls: 2 },
-        { name: "Partner 1/15s", partnerCycle: 15, partnerBalls: 1 },
-        { name: "Partner 2/15s", partnerCycle: 15, partnerBalls: 2 },
-        { name: "Partner 3/15s", partnerCycle: 15, partnerBalls: 3 },
-        { name: "Partner 4/15s", partnerCycle: 15, partnerBalls: 4 },
+        { partnerCycle: 20, partnerBalls: 1 },
+        { partnerCycle: 20, partnerBalls: 2 },
+        { partnerCycle: 15, partnerBalls: 1 },
+        { partnerCycle: 15, partnerBalls: 2 },
+        { partnerCycle: 15, partnerBalls: 3 },
+        { partnerCycle: 15, partnerBalls: 4 },
       ];
 
       const partnerConfigDefaults = {
-        name: "New partner",
         partnerCycle: 20,
         partnerJitter: 2,
         partnerBalls: 1,
-        partnerAccuracy: 80,
       };
 
       let primarySettings = {};
@@ -348,8 +346,9 @@
         const container = document.getElementById("global-inputs");
         const sections = {
           0: "Simulation",
-          3: "TELEOP starting state",
-          7: "During TELEOP",
+          3: "Shared partner setting",
+          4: "TELEOP starting state",
+          8: "During TELEOP",
         };
         container.innerHTML = globalDefinitions.map(([key, label, value, min, max, step], index) => `
           ${sections[index] ? `<div class="group-title">${sections[index]}</div>` : ""}
@@ -372,14 +371,9 @@
         return `<div class="field"><label>${label}</label><input data-config-kind="${kind}" data-index="${index}" data-key="${key}" type="number" value="${value}" min="${min}" max="${max}" step="${step}" /></div>`;
       }
 
-      function configNameField(kind, index, value) {
-        return `<div class="field"><label>Name</label><input data-config-kind="${kind}" data-index="${index}" data-key="name" type="text" value="${escapeHtml(value)}" /></div>`;
-      }
-
       function renderConfigLists() {
         document.getElementById("primary-configs").innerHTML = primaryConfigs.map((config, index) => `
           <div class="config-row primary-config-row">
-            ${configNameField("primary", index, config.name)}
             ${configNumberField("primary", index, "guaranteedNectar", "Minimum Nectar / cycle", config.guaranteedNectar, 0, 4)}
             ${configNumberField("primary", index, "cyclePenalty", "Extra Nectar cycle time (s)", config.cyclePenalty, 0, 20, .25)}
             <div class="config-actions">
@@ -390,11 +384,9 @@
 
         document.getElementById("partner-configs").innerHTML = partnerConfigs.map((config, index) => `
           <div class="config-row partner-config-row">
-            ${configNameField("partner", index, config.name)}
             ${configNumberField("partner", index, "partnerCycle", "Avg cycle (s)", config.partnerCycle, 2, 60, .25)}
             ${configNumberField("partner", index, "partnerJitter", "Jitter ± sec.", config.partnerJitter, 0, 10, .25)}
             ${configNumberField("partner", index, "partnerBalls", "Pollen / cycle", config.partnerBalls, 1, 4)}
-            ${configNumberField("partner", index, "partnerAccuracy", "All enter chance (%)", config.partnerAccuracy, 0, 100)}
             <div class="config-actions">
               <button class="button small" data-config-action="duplicate" data-config-kind="partner" data-index="${index}">Duplicate</button>
               <button class="button small danger" data-config-action="remove" data-config-kind="partner" data-index="${index}">Remove</button>
@@ -402,16 +394,29 @@
           </div>`).join("");
       }
 
+      function primaryConfigName(config) {
+        const nectar = Number(config.guaranteedNectar);
+        const penalty = Number(config.cyclePenalty);
+        const penaltyLabel = penalty === 0 ? "Equal speed" : `+${Number.isInteger(penalty) ? penalty : penalty.toFixed(2).replace(/0+$/, "")}s`;
+        return `${nectar}N · ${penaltyLabel}`;
+      }
+
+      function partnerConfigName(config) {
+        const balls = Number(config.partnerBalls);
+        const cycle = Number(config.partnerCycle);
+        const cycleLabel = Number.isInteger(cycle) ? cycle : cycle.toFixed(2).replace(/0+$/, "");
+        return `Partner ${balls}P/${cycleLabel}s`;
+      }
+
       function buildScenarios() {
         return primaryConfigs.flatMap(primaryConfig => partnerConfigs.map(partnerConfig => ({
-          name: `${primaryConfig.name} · ${partnerConfig.name}`,
+          name: `${primaryConfigName(primaryConfig)} · ${partnerConfigName(partnerConfig)}`,
           ...primarySettings,
           guaranteedNectar: primaryConfig.guaranteedNectar,
           strategyCycle: primarySettings.baselineCycle + primaryConfig.cyclePenalty,
           partnerCycle: partnerConfig.partnerCycle,
           partnerJitter: partnerConfig.partnerJitter,
           partnerBalls: partnerConfig.partnerBalls,
-          partnerAccuracy: partnerConfig.partnerAccuracy,
         })));
       }
 
@@ -593,7 +598,7 @@
 
           const baselinePrimary = makeSchedule(primaryTimes, primaryHits, primaryMisses, scenario.baselineCycle, scenario.primaryJitter, "primary", scenario.primaryBalls, scenario.baselineAccuracy / 100, globals.duration);
           const strategyPrimary = makeSchedule(primaryTimes, primaryHits, primaryMisses, scenario.strategyCycle, scenario.primaryJitter, "primary", scenario.primaryBalls, scenario.strategyAccuracy / 100, globals.duration);
-          const partner = makeSchedule(partnerTimes, partnerHits, partnerMisses, scenario.partnerCycle, scenario.partnerJitter, "partner", scenario.partnerBalls, scenario.partnerAccuracy / 100, globals.duration);
+          const partner = makeSchedule(partnerTimes, partnerHits, partnerMisses, scenario.partnerCycle, scenario.partnerJitter, "partner", scenario.partnerBalls, globals.partnerAccuracy / 100, globals.duration);
           const baselineEvents = baselinePrimary.concat(partner).sort((a, b) => a.time - b.time || (a.robot === "partner" ? -1 : 1));
           const strategyEvents = strategyPrimary.concat(partner).sort((a, b) => a.time - b.time || (a.robot === "partner" ? -1 : 1));
 
@@ -762,7 +767,10 @@
         syncConfigInputs();
         const index = Number(action.dataset.index);
         const collection = action.dataset.configKind === "primary" ? primaryConfigs : partnerConfigs;
-        if (action.dataset.configAction === "duplicate") collection.splice(index + 1, 0, { ...collection[index], name: `${collection[index].name} copy` });
+        if (action.dataset.configAction === "duplicate") {
+          const copy = { ...collection[index] };
+          collection.splice(index + 1, 0, copy);
+        }
         if (action.dataset.configAction === "remove" && collection.length > 1) collection.splice(index, 1);
         scenarios = buildScenarios();
         results = [];

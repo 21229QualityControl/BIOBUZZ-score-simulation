@@ -6,7 +6,7 @@ It compares a Pollen-only primary robot with a dual-size robot that targets Nect
 
 - Shared primary-robot settings that apply to every simulation
 - Reusable primary strategy configurations for guaranteed Nectar count and added cycle time
-- Reusable partner configurations
+- Reusable partner cycle/load configurations with one shared partner accuracy setting
 - Automatic generation of every primary-strategy × partner combination
 - Batch shooting accuracy
 - Partner robot contribution
