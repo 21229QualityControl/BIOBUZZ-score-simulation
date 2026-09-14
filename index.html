@@ -74,10 +74,20 @@
       }
       .field input:focus, .field select:focus { border-color: var(--honey); box-shadow: 0 0 0 3px rgba(245,189,61,.1); }
 
+      .config-layout { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 18px; margin-bottom: 24px; }
+      .config-card { padding: 20px; }
+      .config-list { display: grid; gap: 10px; }
+      .config-row { display: grid; gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #0c1110; }
+      .primary-config-row { grid-template-columns: minmax(150px, 1.5fr) repeat(2, minmax(110px, 1fr)) auto; }
+      .partner-config-row { grid-template-columns: minmax(145px, 1.4fr) repeat(4, minmax(90px, 1fr)) auto; }
+      .config-row .field input { background: var(--surface); }
+      .config-actions { display: flex; gap: 6px; align-items: center; }
+
       .scenarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
       .scenario { overflow: hidden; }
       .scenario-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 14px; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--line); }
       .scenario-title { flex: 1 1 340px; min-width: 0; border: 0; padding: 0; color: var(--text); background: transparent; font-size: 18px; font-weight: 850; outline: 0; }
+      .scenario-name { margin: 0; font-size: 18px; letter-spacing: -.02em; }
       .scenario-actions { display: flex; gap: 6px; flex-shrink: 0; }
       .scenario-body { padding: 17px; }
       .scenario-inputs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
@@ -121,6 +131,8 @@
       @media (max-width: 1050px) {
         .grid { grid-template-columns: repeat(3, 1fr); }
         .scenario-inputs { grid-template-columns: repeat(2, 1fr); }
+        .config-layout { grid-template-columns: 1fr; }
+        .partner-config-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
       @media (max-width: 820px) {
         .scenarios { grid-template-columns: 1fr; }
@@ -130,6 +142,7 @@
       @media (max-width: 560px) {
         .shell { width: min(100% - 20px, 1500px); padding-top: 22px; }
         .grid, .scenario-inputs, .metrics { grid-template-columns: repeat(2, 1fr); }
+        .primary-config-row, .partner-config-row { grid-template-columns: 1fr; }
         .scenario-top { align-items: flex-start; }
       }
     </style>
@@ -156,10 +169,43 @@
         <div class="grid" id="global-inputs"></div>
       </section>
 
+      <section class="card global-card">
+        <div class="card-head">
+          <div>
+            <h2>Primary robot settings</h2>
+            <div class="subtle">Shared by every generated scenario, so the base cycle time, jitter, load size, and accuracy only need to be changed once.</div>
+          </div>
+        </div>
+        <div class="grid" id="primary-inputs"></div>
+      </section>
+
+      <div class="config-layout">
+        <section class="card config-card">
+          <div class="card-head">
+            <div>
+              <h2>Primary strategy configurations</h2>
+              <div class="subtle">Vary only the guaranteed Nectar count and added Nectar-cycle time. Each entry is combined with every partner configuration.</div>
+            </div>
+            <button class="button small" id="add-primary-config">Add</button>
+          </div>
+          <div class="config-list" id="primary-configs"></div>
+        </section>
+
+        <section class="card config-card">
+          <div class="card-head">
+            <div>
+              <h2>Partner configurations</h2>
+              <div class="subtle">Define each partner once and reuse it across every primary strategy.</div>
+            </div>
+            <button class="button small" id="add-partner-config">Add</button>
+          </div>
+          <div class="config-list" id="partner-configs"></div>
+        </section>
+      </div>
+
       <div class="toolbar">
         <button class="button primary" id="run-all">Run all simulations</button>
-        <button class="button" id="add-scenario">Add scenario</button>
-        <button class="button" id="reset">Reset examples</button>
+        <button class="button" id="reset">Reset configurations</button>
         <button class="button" id="download">Download comparison CSV</button>
       </div>
 
@@ -223,43 +269,57 @@
         ["releaseAt", "Release all at elapsed sec.", 60, 0, 120, 1],
       ];
 
-      const partnerPresets = [
-        { label: "1/20s", partnerCycle: 20, partnerBalls: 1 },
-        { label: "2/20s", partnerCycle: 20, partnerBalls: 2 },
-        { label: "1/15s", partnerCycle: 15, partnerBalls: 1 },
-        { label: "2/15s", partnerCycle: 15, partnerBalls: 2 },
-        { label: "3/15s", partnerCycle: 15, partnerBalls: 3 },
-        { label: "4/15s", partnerCycle: 15, partnerBalls: 4 },
+      const primaryDefinitions = [
+        ["baselineCycle", "Avg Pollen-only cycle (s)", 10, 2, 60, .25],
+        ["primaryJitter", "Cycle jitter ± sec.", 2, 0, 10, .25],
+        ["primaryBalls", "Balls intaken per cycle", 4, 1, 4, 1],
+        ["baselineAccuracy", "All Pollen enter Hive chance (%)", 90, 0, 100, 1],
+        ["strategyAccuracy", "All targeted balls enter Hive chance (%)", 90, 0, 100, 1],
+        ["extraNectarChance", "Chance each other ball is Nectar (%)", 0, 0, 100, 1],
       ];
 
-      const defaultScenarios = [
-        ...partnerPresets.flatMap(({ label, ...partner }) => [
-          { name: `2N · Equal 10s · Partner ${label}`, guaranteedNectar: 2, strategyCycle: 10, ...partner },
-          { name: `3N · Equal 10s · Partner ${label}`, guaranteedNectar: 3, strategyCycle: 10, ...partner },
-        ]),
-        ...partnerPresets.flatMap(({ label, ...partner }) => [
-          { name: `2N · Dual +2s · Partner ${label}`, guaranteedNectar: 2, ...partner },
-          { name: `3N · Dual +2s · Partner ${label}`, guaranteedNectar: 3, ...partner },
-        ]),
-      ];
-
-      const scenarioDefaults = {
-        name: "New scenario",
+      const primaryDefaults = {
         baselineCycle: 10,
-        strategyCycle: 12,
         primaryJitter: 2,
         primaryBalls: 4,
         baselineAccuracy: 90,
         strategyAccuracy: 90,
-        guaranteedNectar: 3,
         extraNectarChance: 0,
-        firingOrder: "random",
+      };
+
+      const defaultPrimaryConfigs = [
+        { name: "2N · Equal speed", guaranteedNectar: 2, cyclePenalty: 0 },
+        { name: "3N · Equal speed", guaranteedNectar: 3, cyclePenalty: 0 },
+        { name: "2N · +2s", guaranteedNectar: 2, cyclePenalty: 2 },
+        { name: "3N · +2s", guaranteedNectar: 3, cyclePenalty: 2 },
+      ];
+
+      const primaryConfigDefaults = {
+        name: "New primary strategy",
+        guaranteedNectar: 2,
+        cyclePenalty: 0,
+      };
+
+      const defaultPartnerConfigs = [
+        { name: "Partner 1/20s", partnerCycle: 20, partnerBalls: 1 },
+        { name: "Partner 2/20s", partnerCycle: 20, partnerBalls: 2 },
+        { name: "Partner 1/15s", partnerCycle: 15, partnerBalls: 1 },
+        { name: "Partner 2/15s", partnerCycle: 15, partnerBalls: 2 },
+        { name: "Partner 3/15s", partnerCycle: 15, partnerBalls: 3 },
+        { name: "Partner 4/15s", partnerCycle: 15, partnerBalls: 4 },
+      ];
+
+      const partnerConfigDefaults = {
+        name: "New partner",
         partnerCycle: 20,
         partnerJitter: 2,
         partnerBalls: 1,
         partnerAccuracy: 80,
       };
 
+      let primarySettings = {};
+      let primaryConfigs = [];
+      let partnerConfigs = [];
       let scenarios = [];
       let results = [];
 
@@ -290,8 +350,60 @@
           </div>`).join("");
       }
 
-      function scenarioField(index, key, label, value, min, max, step = 1) {
-        return `<div class="field"><label>${label}</label><input data-index="${index}" data-key="${key}" type="number" value="${value}" min="${min}" max="${max}" step="${step}" /></div>`;
+      function renderPrimaryInputs() {
+        const container = document.getElementById("primary-inputs");
+        container.innerHTML = primaryDefinitions.map(([key, label, fallback, min, max, step]) => `
+          <div class="field">
+            <label for="primary-${key}">${label}</label>
+            <input id="primary-${key}" data-primary-setting="${key}" type="number" value="${primarySettings[key] ?? fallback}" min="${min}" max="${max}" step="${step}" />
+          </div>`).join("");
+      }
+
+      function configNumberField(kind, index, key, label, value, min, max, step = 1) {
+        return `<div class="field"><label>${label}</label><input data-config-kind="${kind}" data-index="${index}" data-key="${key}" type="number" value="${value}" min="${min}" max="${max}" step="${step}" /></div>`;
+      }
+
+      function configNameField(kind, index, value) {
+        return `<div class="field"><label>Name</label><input data-config-kind="${kind}" data-index="${index}" data-key="name" type="text" value="${escapeHtml(value)}" /></div>`;
+      }
+
+      function renderConfigLists() {
+        document.getElementById("primary-configs").innerHTML = primaryConfigs.map((config, index) => `
+          <div class="config-row primary-config-row">
+            ${configNameField("primary", index, config.name)}
+            ${configNumberField("primary", index, "guaranteedNectar", "Minimum Nectar / cycle", config.guaranteedNectar, 0, 4)}
+            ${configNumberField("primary", index, "cyclePenalty", "Extra Nectar cycle time (s)", config.cyclePenalty, 0, 20, .25)}
+            <div class="config-actions">
+              <button class="button small" data-config-action="duplicate" data-config-kind="primary" data-index="${index}">Duplicate</button>
+              <button class="button small danger" data-config-action="remove" data-config-kind="primary" data-index="${index}">Remove</button>
+            </div>
+          </div>`).join("");
+
+        document.getElementById("partner-configs").innerHTML = partnerConfigs.map((config, index) => `
+          <div class="config-row partner-config-row">
+            ${configNameField("partner", index, config.name)}
+            ${configNumberField("partner", index, "partnerCycle", "Avg cycle (s)", config.partnerCycle, 2, 60, .25)}
+            ${configNumberField("partner", index, "partnerJitter", "Jitter ± sec.", config.partnerJitter, 0, 10, .25)}
+            ${configNumberField("partner", index, "partnerBalls", "Pollen / cycle", config.partnerBalls, 1, 4)}
+            ${configNumberField("partner", index, "partnerAccuracy", "All enter chance (%)", config.partnerAccuracy, 0, 100)}
+            <div class="config-actions">
+              <button class="button small" data-config-action="duplicate" data-config-kind="partner" data-index="${index}">Duplicate</button>
+              <button class="button small danger" data-config-action="remove" data-config-kind="partner" data-index="${index}">Remove</button>
+            </div>
+          </div>`).join("");
+      }
+
+      function buildScenarios() {
+        return primaryConfigs.flatMap(primaryConfig => partnerConfigs.map(partnerConfig => ({
+          name: `${primaryConfig.name} · ${partnerConfig.name}`,
+          ...primarySettings,
+          guaranteedNectar: primaryConfig.guaranteedNectar,
+          strategyCycle: primarySettings.baselineCycle + primaryConfig.cyclePenalty,
+          partnerCycle: partnerConfig.partnerCycle,
+          partnerJitter: partnerConfig.partnerJitter,
+          partnerBalls: partnerConfig.partnerBalls,
+          partnerAccuracy: partnerConfig.partnerAccuracy,
+        })));
       }
 
       function renderScenarios() {
@@ -299,32 +411,12 @@
         container.innerHTML = scenarios.map((s, index) => `
           <article class="card scenario" data-card="${index}">
             <div class="scenario-top">
-              <input class="scenario-title" aria-label="Scenario name" title="${escapeHtml(s.name)}" data-index="${index}" data-key="name" value="${escapeHtml(s.name)}" />
-              <div class="scenario-actions">
-                <button class="button small" data-action="duplicate" data-index="${index}">Duplicate</button>
-                <button class="button small danger" data-action="remove" data-index="${index}">Remove</button>
-              </div>
+              <h3 class="scenario-name">${escapeHtml(s.name)}</h3>
             </div>
             <div class="scenario-body">
-              <div class="scenario-inputs">
-                <div class="group-title">Primary robot</div>
-                <div class="input-help">A cycle includes finding and intaking the load, driving and aiming, then shooting. Accuracy is the chance that every ball in that cycle enters the Hive; otherwise exactly one misses.</div>
-                ${scenarioField(index, "baselineCycle", "Avg Pollen-only cycle (s)", s.baselineCycle, 2, 60, .25)}
-                ${scenarioField(index, "strategyCycle", "Avg cycle targeting Nectar (s)", s.strategyCycle, 2, 60, .25)}
-                ${scenarioField(index, "primaryJitter", "Cycle jitter ± sec.", s.primaryJitter, 0, 10, .25)}
-                ${scenarioField(index, "primaryBalls", "Balls intaken per cycle", s.primaryBalls, 1, 4, 1)}
-                ${scenarioField(index, "baselineAccuracy", "All Pollen enter Hive chance (%)", s.baselineAccuracy, 0, 100, 1)}
-                ${scenarioField(index, "strategyAccuracy", "All targeted balls enter Hive chance (%)", s.strategyAccuracy, 0, 100, 1)}
-                ${scenarioField(index, "guaranteedNectar", "Minimum Nectar intaken per cycle", s.guaranteedNectar, 0, 4, 1)}
-                ${scenarioField(index, "extraNectarChance", "Chance each other ball is Nectar (%)", s.extraNectarChance, 0, 100, 1)}
-                <div class="group-title">Partner robot</div>
-                ${scenarioField(index, "partnerCycle", "Average cycle (s)", s.partnerCycle, 2, 60, .25)}
-                ${scenarioField(index, "partnerJitter", "Cycle jitter ± sec.", s.partnerJitter, 0, 10, .25)}
-                ${scenarioField(index, "partnerBalls", "Pollen / cycle", s.partnerBalls, 1, 4, 1)}
-                ${scenarioField(index, "partnerAccuracy", "All partner Pollen enter Hive chance (%)", s.partnerAccuracy, 0, 100, 1)}
-              </div>
+              <div class="input-help">Pollen cycle ${num(s.baselineCycle, 1)}s · Nectar cycle ${num(s.strategyCycle, 1)}s · Minimum ${s.guaranteedNectar} Nectar</div>
               <div class="results empty" id="result-${index}">Run simulation to calculate this scenario.</div>
-            </div>
+              </div>
           </article>`).join("");
       }
 
@@ -343,11 +435,15 @@
         return values;
       }
 
-      function syncScenarioInputs() {
-        document.querySelectorAll("[data-index][data-key]").forEach(input => {
-          const s = scenarios[Number(input.dataset.index)];
-          if (!s) return;
-          s[input.dataset.key] = input.dataset.key === "name" || input.tagName === "SELECT" ? input.value : Number(input.value);
+      function syncConfigInputs() {
+        document.querySelectorAll("[data-primary-setting]").forEach(input => {
+          primarySettings[input.dataset.primarySetting] = Number(input.value);
+        });
+        document.querySelectorAll("[data-config-kind][data-index][data-key]").forEach(input => {
+          const collection = input.dataset.configKind === "primary" ? primaryConfigs : partnerConfigs;
+          const config = collection[Number(input.dataset.index)];
+          if (!config) return;
+          config[input.dataset.key] = input.dataset.key === "name" ? input.value : Number(input.value);
         });
       }
 
@@ -583,7 +679,11 @@
       }
 
       function runAll() {
-        syncScenarioInputs();
+        syncConfigInputs();
+        scenarios = buildScenarios();
+        results = [];
+        renderScenarios();
+        renderComparison();
         const globals = readGlobals();
         const status = document.getElementById("status");
         const button = document.getElementById("run-all");
@@ -600,12 +700,17 @@
       }
 
       function reset() {
-        scenarios = defaultScenarios.map(s => ({ ...scenarioDefaults, ...s }));
+        primarySettings = { ...primaryDefaults };
+        primaryConfigs = defaultPrimaryConfigs.map(config => ({ ...primaryConfigDefaults, ...config }));
+        partnerConfigs = defaultPartnerConfigs.map(config => ({ ...partnerConfigDefaults, ...config }));
+        scenarios = buildScenarios();
         results = [];
         renderGlobalInputs();
+        renderPrimaryInputs();
+        renderConfigLists();
         renderScenarios();
         renderComparison();
-        document.getElementById("status").textContent = "Examples restored.";
+        document.getElementById("status").textContent = `${scenarios.length} scenario combinations ready.`;
       }
 
       function downloadCsv() {
@@ -621,29 +726,53 @@
       }
 
       document.addEventListener("input", event => {
-        const input = event.target.closest("[data-index][data-key]");
-        if (!input) return;
-        const scenario = scenarios[Number(input.dataset.index)];
-        if (scenario) scenario[input.dataset.key] = input.dataset.key === "name" ? input.value : Number(input.value);
-      });
-      document.addEventListener("change", event => {
-        const select = event.target.closest("select[data-index]");
-        if (select) scenarios[Number(select.dataset.index)][select.dataset.key] = select.value;
+        const primaryInput = event.target.closest("[data-primary-setting]");
+        if (primaryInput) primarySettings[primaryInput.dataset.primarySetting] = Number(primaryInput.value);
+
+        const configInput = event.target.closest("[data-config-kind][data-index][data-key]");
+        if (configInput) {
+          const collection = configInput.dataset.configKind === "primary" ? primaryConfigs : partnerConfigs;
+          const config = collection[Number(configInput.dataset.index)];
+          if (config) config[configInput.dataset.key] = configInput.dataset.key === "name" ? configInput.value : Number(configInput.value);
+        }
+
+        if (primaryInput || configInput) document.getElementById("status").textContent = "Configuration changed—run simulations to update results.";
       });
       document.addEventListener("click", event => {
-        const action = event.target.closest("[data-action]");
+        const action = event.target.closest("[data-config-action]");
         if (!action) return;
-        syncScenarioInputs();
+        syncConfigInputs();
         const index = Number(action.dataset.index);
-        if (action.dataset.action === "duplicate") scenarios.splice(index + 1, 0, { ...scenarios[index], name: `${scenarios[index].name} copy` });
-        if (action.dataset.action === "remove" && scenarios.length > 1) scenarios.splice(index, 1);
+        const collection = action.dataset.configKind === "primary" ? primaryConfigs : partnerConfigs;
+        if (action.dataset.configAction === "duplicate") collection.splice(index + 1, 0, { ...collection[index], name: `${collection[index].name} copy` });
+        if (action.dataset.configAction === "remove" && collection.length > 1) collection.splice(index, 1);
+        scenarios = buildScenarios();
         results = [];
+        renderConfigLists();
         renderScenarios();
         renderComparison();
+        document.getElementById("status").textContent = `${scenarios.length} scenario combinations ready.`;
       });
       document.getElementById("run-all").addEventListener("click", runAll);
-      document.getElementById("add-scenario").addEventListener("click", () => {
-        syncScenarioInputs(); scenarios.push({ ...scenarioDefaults }); results = []; renderScenarios(); renderComparison();
+      document.getElementById("add-primary-config").addEventListener("click", () => {
+        syncConfigInputs();
+        primaryConfigs.push({ ...primaryConfigDefaults });
+        scenarios = buildScenarios();
+        results = [];
+        renderConfigLists();
+        renderScenarios();
+        renderComparison();
+        document.getElementById("status").textContent = `${scenarios.length} scenario combinations ready.`;
+      });
+      document.getElementById("add-partner-config").addEventListener("click", () => {
+        syncConfigInputs();
+        partnerConfigs.push({ ...partnerConfigDefaults });
+        scenarios = buildScenarios();
+        results = [];
+        renderConfigLists();
+        renderScenarios();
+        renderComparison();
+        document.getElementById("status").textContent = `${scenarios.length} scenario combinations ready.`;
       });
       document.getElementById("reset").addEventListener("click", reset);
       document.getElementById("download").addEventListener("click", downloadCsv);

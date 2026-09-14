@@ -4,8 +4,10 @@ A standalone Monte Carlo simulator for comparing FTC BIOBUZZ Hive-scoring strate
 
 It compares a Pollen-only primary robot with a dual-size robot that targets Nectar, including:
 
-- Variable robot cycle times
-- Matched two-Nectar and three-Nectar presets at both same-speed and +2-second cycle times
+- Shared primary-robot settings that apply to every simulation
+- Reusable primary strategy configurations for guaranteed Nectar count and added cycle time
+- Reusable partner configurations
+- Automatic generation of every primary-strategy × partner combination
 - Batch shooting accuracy
 - Partner robot contribution
 - The four-piece control limit
