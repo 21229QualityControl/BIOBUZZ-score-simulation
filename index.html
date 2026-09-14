@@ -175,8 +175,8 @@
       <section class="card global-card">
         <div class="card-head">
           <div>
-            <h2>Primary robot settings</h2>
-            <div class="subtle">Shared by every generated scenario, so the base cycle time, jitter, load size, and accuracy only need to be changed once.</div>
+            <h2>Robot settings</h2>
+            <div class="subtle">Shared by every generated scenario, so common primary and partner values only need to be changed once.</div>
           </div>
         </div>
         <div class="grid" id="primary-inputs"></div>
@@ -186,7 +186,7 @@
         <section class="card config-card">
           <div class="card-head">
             <div>
-              <h2>Primary strategy configurations</h2>
+              <h2>Primary robot scenarios</h2>
               <div class="subtle">Names are generated from the Nectar target and added cycle time. Each entry is combined with every partner configuration.</div>
             </div>
             <button class="button small" id="add-primary-config">Add</button>
@@ -197,7 +197,7 @@
         <section class="card config-card">
           <div class="card-head">
             <div>
-              <h2>Partner configurations</h2>
+              <h2>Partner scenarios</h2>
               <div class="subtle">Names are generated from Pollen per cycle and average cycle time. Each partner is reused across every primary strategy.</div>
             </div>
             <button class="button small" id="add-partner-config">Add</button>
@@ -265,13 +265,11 @@
         ["trials", "Trials / scenario", 1000, 100, 200000, 100],
         ["duration", "TELEOP seconds", 120, 30, 180, 1],
         ["pointsPerTip", "Points / tip", 20, 1, 100, 1],
-        ["partnerAccuracy", "All partner Pollen enter Hive chance (%)", 80, 0, 100, 1],
-        ["partnerJitter", "Partner cycle jitter ± sec.", 2, 0, 10, .25],
         ["startingTips", "Tips already earned", 1, 0, 20, 1],
         ["startingCellNectar", "Nectar in Hive Cell", 0, 0, 8, 1],
         ["availableNectar", "Nectar available", 4, 0, 8, 1],
         ["heldNectar", "Nectar held by HP", 4, 0, 8, 1],
-        ["releaseAt", "Release all at elapsed sec.", 60, 0, 120, 1],
+        ["releaseAt", "Release all Nectars at elapsed sec.", 60, 0, 120, 1],
       ];
 
       const primaryDefinitions = [
@@ -281,6 +279,11 @@
         ["baselineAccuracy", "All Pollen enter Hive chance (%)", 90, 0, 100, 1],
         ["strategyAccuracy", "All targeted balls enter Hive chance (%)", 90, 0, 100, 1],
         ["extraNectarChance", "Chance each other ball is Nectar (%)", 0, 0, 100, 1],
+      ];
+
+      const partnerSharedDefinitions = [
+        ["partnerAccuracy", "All partner Pollen enter Hive chance (%)", 80, 0, 100, 1],
+        ["partnerJitter", "Partner cycle jitter ± sec.", 2, 0, 10, .25],
       ];
 
       const primaryDefaults = {
@@ -346,9 +349,8 @@
         const container = document.getElementById("global-inputs");
         const sections = {
           0: "Simulation",
-          3: "Shared partner setting",
-          5: "TELEOP starting state",
-          9: "During TELEOP",
+          3: "TELEOP starting state",
+          7: "During TELEOP",
         };
         container.innerHTML = globalDefinitions.map(([key, label, value, min, max, step], index) => `
           ${sections[index] ? `<div class="group-title">${sections[index]}</div>` : ""}
@@ -360,11 +362,21 @@
 
       function renderPrimaryInputs() {
         const container = document.getElementById("primary-inputs");
-        container.innerHTML = primaryDefinitions.map(([key, label, fallback, min, max, step]) => `
+        const primaryFields = primaryDefinitions.map(([key, label, fallback, min, max, step]) => `
           <div class="field">
             <label for="primary-${key}">${label}</label>
             <input id="primary-${key}" data-primary-setting="${key}" type="number" value="${primarySettings[key] ?? fallback}" min="${min}" max="${max}" step="${step}" />
           </div>`).join("");
+        const partnerFields = partnerSharedDefinitions.map(([key, label, value, min, max, step]) => `
+          <div class="field">
+            <label for="partner-shared-${key}">${label}</label>
+            <input id="partner-shared-${key}" data-global="${key}" type="number" value="${value}" min="${min}" max="${max}" step="${step}" />
+          </div>`).join("");
+        container.innerHTML = `
+          <div class="group-title">Primary robot settings</div>
+          ${primaryFields}
+          <div class="group-title">Partner robot settings</div>
+          ${partnerFields}`;
       }
 
       function configNumberField(kind, index, key, label, value, min, max, step = 1) {
@@ -747,6 +759,7 @@
       }
 
       document.addEventListener("input", event => {
+        const globalInput = event.target.closest("[data-global]");
         const primaryInput = event.target.closest("[data-primary-setting]");
         if (primaryInput) primarySettings[primaryInput.dataset.primarySetting] = Number(primaryInput.value);
 
@@ -757,7 +770,7 @@
           if (config) config[configInput.dataset.key] = configInput.dataset.key === "name" ? configInput.value : Number(configInput.value);
         }
 
-        if (primaryInput || configInput) document.getElementById("status").textContent = "Configuration changed—run simulations to update results.";
+        if (globalInput || primaryInput || configInput) document.getElementById("status").textContent = "Configuration changed—run simulations to update results.";
       });
       document.addEventListener("click", event => {
         const action = event.target.closest("[data-config-action]");
