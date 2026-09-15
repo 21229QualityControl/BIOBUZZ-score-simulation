@@ -27,4 +27,4 @@ Open `index.html` in a browser. The simulator has no build step, server, or exte
 
 The included values are editable starting assumptions, not predictions of actual field performance. Validate the tipping and shooting assumptions with real game pieces and an official field element.
 
-Public page-load and completed-simulation counters are provided by the hosted GoatCounter service. Displayed totals may be cached for up to four hours.
+Public page-load and completed-simulation counters are provided by the hosted GoatCounter service. Each page load and simulation run is counted independently; displayed totals may be cached for up to four hours.
