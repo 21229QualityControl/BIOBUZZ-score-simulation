@@ -9,9 +9,7 @@
       data-goatcounter="https://ftc21229.goatcounter.com/count"
       data-goatcounter-settings='{"path":"/BIOBUZZ-score-simulation/"}'
       async
-      src="https://gc.zgo.at/count.v5.js"
-      crossorigin="anonymous"
-      integrity="sha384-atnOLvQb9t+jTSipvd75X2yginT4PjVbqDdlJAmxMm+wYElFmeR6EmLP5bYeoRVQ"
+      src="https://gc.zgo.at/count.js"
     ></script>
     <style>
       :root {
@@ -219,7 +217,13 @@
       </div>
 
       <div class="toolbar">
-        <button class="button primary" id="run-all">Run all simulations</button>
+        <button
+          class="button primary"
+          id="run-all"
+          data-goatcounter-click="simulation-run"
+          data-goatcounter-title="Completed simulation run"
+          data-goatcounter-no-session="true"
+        >Run all simulations</button>
         <button class="button" id="reset">Reset configurations</button>
         <button class="button" id="download">Download comparison CSV</button>
       </div>
@@ -379,19 +383,6 @@
       function refreshPublicCounters() {
         refreshPublicCounter("/BIOBUZZ-score-simulation/", "page-load-count");
         refreshPublicCounter("simulation-run", "simulation-run-count");
-      }
-
-      function trackSimulationRun(attempt = 0) {
-        if (window.goatcounter?.count) {
-          window.goatcounter.count({
-            path: "simulation-run",
-            title: "Completed simulation run",
-            event: true,
-            no_session: true,
-          });
-          return;
-        }
-        if (attempt < 25) setTimeout(() => trackSimulationRun(attempt + 1), 200);
       }
 
       function renderGlobalInputs() {
@@ -776,7 +767,6 @@
           renderScenarios();
           results.forEach((result, index) => renderResult(index, result));
           renderComparison();
-          trackSimulationRun();
           status.textContent = `Completed ${(globals.trials * scenarios.length).toLocaleString()} matches in ${((performance.now() - start) / 1000).toFixed(2)}s.`;
           button.disabled = false;
         }, 20);
