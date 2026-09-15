@@ -52,12 +52,6 @@
       .eyebrow { color: var(--honey); font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
       h1 { margin: 7px 0 8px; font-size: clamp(30px, 5vw, 54px); line-height: 1; letter-spacing: -.045em; }
       .hero p { max-width: 810px; margin: 0; color: var(--muted); font-size: 16px; }
-      .activity-counters { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-      .activity-counter { display: flex; gap: 8px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; background: rgba(17, 23, 22, .78); }
-      .activity-counter span { color: var(--muted); font-size: 12px; }
-      .activity-counter strong { color: var(--green); font-size: 14px; }
-      .activity-source { align-self: center; color: var(--muted); font-size: 11px; }
-      .activity-source a { color: inherit; }
       .hero-mark {
         width: 82px; aspect-ratio: 1; border: 1px solid var(--honey-2); border-radius: 24px;
         display: grid; place-items: center; color: var(--honey); font-size: 34px;
@@ -145,6 +139,9 @@
       details summary { cursor: pointer; font-weight: 850; }
       details ul { margin-bottom: 0; color: var(--muted); }
       .status { min-height: 20px; color: var(--muted); font-size: 13px; }
+      .site-footer { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px 16px; margin-top: 24px; color: var(--muted); font-size: 11px; opacity: .72; }
+      .site-footer strong { color: inherit; font-weight: 750; }
+      .site-footer a { color: inherit; }
 
       @media (max-width: 1050px) {
         .grid { grid-template-columns: repeat(3, 1fr); }
@@ -172,11 +169,6 @@
           <div class="eyebrow">FTC 2026-27 · BIOBUZZ</div>
           <h1>Hive cycle simulator</h1>
           <p>Compare a Pollen-only primary robot with a primary robot capable of intaking and shooting both Pollen and Nectar, with or without a cycle-time penalty. Every panel runs a paired Monte Carlo simulation using the same match randomness.</p>
-          <div class="activity-counters" title="Public counters can take up to four hours to refresh.">
-            <div class="activity-counter"><span>Page loads</span><strong id="page-load-count">—</strong></div>
-            <div class="activity-counter"><span>Simulation runs</span><strong id="simulation-run-count">—</strong></div>
-            <span class="activity-source">via <a href="https://www.goatcounter.com/" target="_blank" rel="noopener noreferrer">GoatCounter</a></span>
-          </div>
         </div>
         <div class="hero-mark" aria-hidden="true">⬢</div>
       </header>
@@ -278,6 +270,12 @@
           <li>The simulation does not model defense, travel geometry, Hive settling time, shot distance, or Flower scoring.</li>
         </ul>
       </details>
+
+      <footer class="site-footer" title="Public counters are cached and can take up to four hours to refresh.">
+        <span>Page loads: <strong id="page-load-count">—</strong></span>
+        <span>Simulation runs: <strong id="simulation-run-count">—</strong></span>
+        <span>Cached totals via <a href="https://www.goatcounter.com/" target="_blank" rel="noopener noreferrer">GoatCounter</a></span>
+      </footer>
     </main>
 
     <script>
@@ -366,7 +364,6 @@
       function signed(value, digits = 1) { return `${value >= 0 ? "+" : ""}${Number(value).toFixed(digits)}`; }
 
       const goatCounterBase = "https://ftc21229.goatcounter.com";
-      const publishedHost = "21229qualitycontrol.github.io";
 
       async function refreshPublicCounter(path, elementId) {
         const element = document.getElementById(elementId);
@@ -392,11 +389,6 @@
             event: true,
             no_session: true,
           });
-          if (location.hostname === publishedHost) {
-            const element = document.getElementById("simulation-run-count");
-            const current = Number(element.textContent.replace(/[^0-9]/g, ""));
-            if (Number.isFinite(current)) element.textContent = (current + 1).toLocaleString();
-          }
           return;
         }
         if (attempt < 25) setTimeout(() => trackSimulationRun(attempt + 1), 200);
